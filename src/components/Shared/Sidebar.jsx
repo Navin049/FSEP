@@ -36,7 +36,7 @@ const Sidebar = () => {
           👥 Team
           <ul className="submenu">
             <li><Link to="/team">All Members</Link></li>
-            <li><Link to="/team/MemberForm">➕ Add Member</Link></li>
+            {/* <li><Link to="/team/MemberForm">➕ Add Member</Link></li> */}
           </ul>
         </li><hr />
 {/* 

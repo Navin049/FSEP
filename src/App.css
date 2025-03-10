@@ -37,6 +37,7 @@ body {
   flex-direction: column;
   padding: 20px; 
   min-height: 100vh;
+  z-index: 1000; 
 }
 
 

@@ -48,10 +48,10 @@ function App() {
           <Route path="/team/MemberForm" element={<MemberForm />} />
           <Route path="/team/details" element={<MemberDetails />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          {/* <Route path="/ServletRegister" element={<ServletRegister/>} /> */}
+          {/* <Route path="/Register" element={<Register />} /> */}
+          <Route path="/ServletRegister" element={<ServletRegister/>} />
           <Route path="/logout" element={<Logout />} />
-          <Route path="/Dashboard/TeamMember_Dashboard" element={<TeamMember_Dashboard/>}/>
+          <Route path="/TeamMember_Dashboard" element={<TeamMember_Dashboard/>}/>
           {/* <Route path="/Admin" element={<Admin/>}/> */}
           <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />

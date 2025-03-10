@@ -8,45 +8,110 @@ const TaskForm = ({ onSubmit, task }) => {
   const [assignedTo, setAssignedTo] = useState(task ? task.assignedTo : "");
   const [priority, setPriority] = useState(task ? task.priority : "Medium");
   const [projectName, setProjectName] = useState(task ? task.projectName : "");
-  const [tasks, setTasks] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    const storedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    setTasks(storedTasks);
-
-    const storedMembers = JSON.parse(localStorage.getItem("teamMembers")) || [];
-    setTeamMembers(storedMembers);
-
-    const storedProjects = JSON.parse(localStorage.getItem("projects")) || [];
-    setProjects(storedProjects);
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newTask = {
-      id: task ? task.id : new Date().getTime(),
-      title,
-      description,
-      status,
-      deadline,
-      assignedTo,
-      priority,
-      projectName, // ✅ Added project name to task object
+    // Fetch available projects
+    const fetchProjects = async () => {
+      try {
+        const projectsRes = await fetch("http://localhost:8080/backend-servlet/ViewProjectServlet", {
+          credentials: "include",
+        });
+        const projectsData = await projectsRes.json();
+        console.log("Projects Data:", projectsData); // Log to check the response
+        setProjects(projectsData.projects || []); // Ensure projectsData is in correct format
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
     };
 
-    let updatedTasks;
-    if (task) {
-      updatedTasks = tasks.map((t) => (t.id === task.id ? newTask : t));
-    } else {
-      updatedTasks = [...tasks, newTask];
+    fetchProjects();
+  }, []);
+
+  const fetchTeamMembers = async (projectId) => {
+    console.log("Fetching team members for project ID:", projectId); // Log the project ID being sent to the backend
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ projectId }), // Pass projectId here
+        credentials: "include",
+      });
+  
+      if (response.ok) {
+        const teamMembersData = await response.json();
+        console.log("Team members data:", teamMembersData); // Log the team members data from the response
+  
+        // Set the team members based on the response
+        setTeamMembers(teamMembersData);  // Assuming the response is an array directly
+      } else {
+        console.error("Error fetching team members:", response.statusText);
+        setTeamMembers([]); // Reset team members on error
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      setTeamMembers([]); // Reset team members on error
     }
+  };
+  
 
-    setTasks(updatedTasks);
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+  const handleProjectChange = (e) => {
+    const selectedProjectName = e.target.value;
+    setProjectName(selectedProjectName);
+    console.log("Project selected:", selectedProjectName); // Log the selected project name
 
-    if (onSubmit) onSubmit(newTask);
+    // Find the selected project by name and fetch the team members
+    const selectedProject = projects.find((project) => project.name === selectedProjectName);
+    console.log("Selected project object:", selectedProject); // Log the selected project object
+
+    if (selectedProject && selectedProject.projectId) {
+      fetchTeamMembers(selectedProject.projectId); // Fetch team members based on the selected projectId
+    } else {
+      setTeamMembers([]); // Reset if no valid project is selected
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newTask = { title, description, status, deadline, assignedTo, priority, projectName };
+    console.log("Task data on submit:", newTask); // Log the task data that is being submitted
+
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/CreateTaskServlet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newTask),
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Task created successfully:", data); // Log the response from creating the task
+        if (onSubmit) {
+          onSubmit(data);
+        }
+
+        // Reset form fields after successful task creation
+        setTitle("");
+        setDescription("");
+        setStatus("To Do");
+        setDeadline("");
+        setAssignedTo();
+        setPriority("Medium");
+        setProjectName("");
+      } else {
+        console.error("Error creating task:", response.statusText);
+        alert("Error creating task.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while creating the task.");
+    }
   };
 
   return (
@@ -69,11 +134,10 @@ const TaskForm = ({ onSubmit, task }) => {
             </label>
           </div>
 
-          {/* ✅ Added Project Name Dropdown */}
           <div className="mb-3">
             <label className="form-label w-100">
               Project Name:
-              <select className="form-control" value={projectName} onChange={(e) => setProjectName(e.target.value)} required>
+              <select className="form-control" value={projectName} onChange={handleProjectChange} required>
                 <option value="">Select a project</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.name}>

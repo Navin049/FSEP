@@ -8,22 +8,37 @@ const Profile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch logged-in user details from localStorage
-    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    if (loggedInUser) {
-      setUser(loggedInUser);
-      setEditUser(loggedInUser);
-    } else {
-      navigate("/login");
-    }
+    // Fetch logged-in user details from the backend
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/backend-servlet/ViewProfileServlet", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",  // Include credentials (cookies) in the request
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+          setEditUser(data);
+        } else {
+          console.error("Failed to fetch user data", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        alert("Failed to fetch user data. Please try again.");
+      }
+    };
+
+    fetchUser();
   }, [navigate]);
 
-  // Handle input changes in edit form
   const handleChange = (e) => {
     setEditUser({ ...editUser, [e.target.name]: e.target.value });
   };
 
-  // Handle profile picture upload
   const handleProfilePicUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -35,17 +50,31 @@ const Profile = () => {
     }
   };
 
-  // Save updated details and update localStorage
-  const handleSave = () => {
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    const updatedUsers = users.map((u) =>
-      u.email === user.email ? editUser : u
-    );
+  const handleSave = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/backend-servlet/UpdateProfileServlet",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editUser),
+          credentials:"include",
+        }
+      );
 
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    localStorage.setItem("loggedInUser", JSON.stringify(editUser));
-    setUser(editUser);
-    setShowModal(false);
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        setShowModal(false);
+      } else {
+        alert("Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("There was an error while saving your changes. Please try again.");
+    }
   };
 
   if (!user) {
@@ -59,12 +88,13 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mt-5">
+    <div className="w-100 d-flex justify-content-center align-items-center" style={{
+      position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", minHeight: "100vh",
+    }}>
       <div className="row justify-content-center">
         <div className="col-lg-12">
           <div className="card shadow-lg text-center">
             <div className="card-body">
-              {/* Profile Picture */}
               <img
                 src={user.profilePic || "https://via.placeholder.com/150"}
                 alt="Profile"
@@ -79,6 +109,9 @@ const Profile = () => {
               <p className="card-text"><strong>Company:</strong> {user.company}</p>
               <p className="card-text"><strong>Address:</strong> {user.address}</p>
               <p className="card-text"><strong>Bio:</strong> {user.bio}</p>
+              <p className="card-text"><strong>Availability:</strong> {user.availability}</p>
+              <p className="card-text"><strong>Skills:</strong> {user.skills}</p>
+              <p className="card-text"><strong>Experience Level:</strong> {user.experienceLevel}</p>
               <button className="btn btn-primary" onClick={() => setShowModal(true)}>Edit</button>
             </div>
           </div>
@@ -99,7 +132,12 @@ const Profile = () => {
                   {/* Profile Picture Upload */}
                   <div className="mb-3 text-center">
                     <label className="form-label">Profile Picture</label>
-                    <input type="file" className="form-control" accept="image/*" onChange={handleProfilePicUpload} />
+                    <input
+                      type="file"
+                      className="form-control"
+                      accept="image/*"
+                      onChange={handleProfilePicUpload}
+                    />
                     <img
                       src={editUser.profilePic || "https://via.placeholder.com/150"}
                       alt="Preview"
@@ -111,52 +149,106 @@ const Profile = () => {
                   {/* Editable Fields */}
                   <div className="mb-3">
                     <label className="form-label">Name</label>
-                    <input type="text" name="name" className="form-control" value={editUser.name} onChange={handleChange} />
+                    <input
+                      type="text"
+                      name="name"
+                      className="form-control"
+                      value={editUser.name}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Email</label>
-                    <input type="email" name="email" className="form-control" value={editUser.email} onChange={handleChange} />
+                    <input
+                      type="email"
+                      name="email"
+                      className="form-control"
+                      value={editUser.email}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Phone</label>
-                    <input type="text" name="phone" className="form-control" value={editUser.phone} onChange={handleChange} />
+                    <input
+                      type="text"
+                      name="phone"
+                      className="form-control"
+                      value={editUser.phone}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Company</label>
-                    <input type="text" name="company" className="form-control" value={editUser.company} onChange={handleChange} />
+                    <input
+                      type="text"
+                      name="company"
+                      className="form-control"
+                      value={editUser.company}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Address</label>
-                    <input type="text" name="address" className="form-control" value={editUser.address} onChange={handleChange} />
+                    <input
+                      type="text"
+                      name="address"
+                      className="form-control"
+                      value={editUser.address}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Bio</label>
-                    <textarea name="bio" className="form-control" value={editUser.bio} onChange={handleChange}></textarea>
+                    <textarea
+                      name="bio"
+                      className="form-control"
+                      value={editUser.bio}
+                      onChange={handleChange}
+                    ></textarea>
                   </div>
 
-                  {/* Role Field */}
+                  {/* New Fields */}
                   <div className="mb-3">
-                    <label className="form-label">Role</label>
-                    <select name="role" className="form-select" value={editUser.role} onChange={handleChange}>
-                      <option value="Project Manager">Project Manager</option>
-                      <option value="Team Member">Team Member</option>
+                    <label className="form-label">Availability</label>
+                    <input
+                      type="text"
+                      name="availability"
+                      className="form-control"
+                      value={editUser.availability}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Skills</label>
+                    <textarea
+                      name="skills"
+                      className="form-control"
+                      value={editUser.skills}
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Experience Level</label>
+                    <select
+                      name="experienceLevel"
+                      className="form-select"
+                      value={editUser.experienceLevel}
+                      onChange={handleChange}
+                    >
+                      <option value="Junior">Junior</option>
+                      <option value="Mid-level">Mid-level</option>
+                      <option value="Senior">Senior</option>
                     </select>
                   </div>
 
-                  {/* Sub Role Field */}
-                  <div className="mb-3">
-                    <label className="form-label">Sub Role</label>
-                    <select name="Subrole" className="form-select" value={editUser.Subrole} onChange={handleChange}>
-                      <option>---Select the Sub Role---</option>
-                      <option value="Developer">Developer</option>
-                      <option value="Designer">Designer</option>
-                      <option value="Manager">Manager</option>
-                      <option value="QA">QA</option>
-                      <option value="Tester">Tester</option>
-                    </select>
-                  </div>
-
-                  <button type="button" className="btn btn-success w-100" onClick={handleSave}>Save Changes</button>
+                  <button type="button" className="btn btn-primary" onClick={handleSave}>
+                    Save
+                  </button>
+                  <button type="button" className="btn btn-secondary ms-2" onClick={() => setShowModal(false)}>
+                    Cancel
+                  </button>
                 </form>
               </div>
             </div>

@@ -5,6 +5,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]); // State for team members
   const [editData, setEditData] = useState({
     id: "",
     name: "",
@@ -13,40 +14,147 @@ const ProjectList = () => {
     enddate: "",
     budget: "",
   });
-  const [showModal, setShowModal] = useState(false); // 👈 State to control modal visibility
+  const [showModal, setShowModal] = useState(false);
 
-  // Load projects from localStorage when the component mounts
+  // Load projects from backend when the component mounts
   useEffect(() => {
-    const storedProjects = JSON.parse(localStorage.getItem("projects")) || [];
-    setProjects(storedProjects);
+    fetchProjects();
   }, []);
 
-  // Handle Edit Button Click (Open Modal)
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/ViewProjectServlet", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // If the response contains a 'projects' array, set it to the state
+        if (data.projects) {
+          setProjects(data.projects);  // Set the 'projects' array directly
+        } else {
+          console.error("Received data does not contain 'projects' array:", data);
+          setProjects([]);  // Set empty projects if data format is unexpected
+        }
+      } else {
+        console.error("Error fetching projects:", response.statusText);
+        setProjects([]);  // Set empty projects on error
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setProjects([]);  // Set empty projects on error
+    }
+  };
+
+  const fetchTeamMembers = async (projectId) => {
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ projectId }),
+      });
+
+      if (response.ok) {
+        const membersData = await response.json();
+
+        if (Array.isArray(membersData)) {
+          setTeamMembers(membersData);  // Set the team members data
+        } else {
+          console.error("Invalid data format for team members:", membersData);
+          setTeamMembers([]);  // Reset to empty array if data format is unexpected
+        }
+      } else {
+        console.error("Error fetching team members:", response.statusText);
+        setTeamMembers([]);  // Reset to empty array on error
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      setTeamMembers([]);  // Reset to empty array on error
+    }
+  };
+
   const handleEditClick = (project) => {
     setSelectedProject(project);
-    setEditData(project);
-    setShowModal(true); // 👈 Show modal
+    setEditData({
+      id: project.projectId,
+      name: project.name,
+      description: project.description,
+      startdate: project.startDate,
+      enddate: project.endDate,
+      budget: project.budget,
+    });
+    setShowModal(true);
   };
 
-  // Handle Save Changes (Update Project in LocalStorage)
-  const handleSaveChanges = () => {
-    const updatedProjects = projects.map((project) =>
-      project.id === selectedProject.id ? editData : project
-    );
-    setProjects(updatedProjects);
-    localStorage.setItem("projects", JSON.stringify(updatedProjects));
-    setShowModal(false); // 👈 Hide modal after saving
-  };
+  const handleSaveChanges = async () => {
+    console.log("Editing project:", editData);
 
-  // Handle Delete Project
-  const handleDelete = (id) => {
-    const isConfirmed = window.confirm("Are you sure you want to delete this member?");
-    
-    if(isConfirmed){
-    const filteredProjects = projects.filter((project) => project.id !== id);
-    setProjects(filteredProjects);
-    localStorage.setItem("projects", JSON.stringify(filteredProjects));
+    if (!editData.id) {
+      console.error("Project ID is missing");
+      return;
     }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/backend-servlet/UpdateProjectServlet`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editData),
+        }
+      );
+
+      if (response.ok) {
+        fetchProjects();  // Re-fetch projects after successful update
+        setShowModal(false);  // Close the modal
+      } else {
+        console.error("Error updating project:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    console.log("Deleting project with ID:", id);
+    const isConfirmed = window.confirm("Are you sure you want to delete this project?");
+    if (isConfirmed) {
+      try {
+        const response = await fetch(
+          `http://localhost:8080/backend-servlet/DeleteProjectServlet`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ Project_ID: id }),
+          }
+        );
+
+        if (response.ok) {
+          fetchProjects();  // Re-fetch projects after deletion
+        } else {
+          console.error("Error deleting project:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error deleting project:", error);
+      }
+    }
+  };
+
+  const handleSelectProject = (project) => {
+    setSelectedProject(project);
+    fetchTeamMembers(project.projectId);  // Fetch team members for the selected project
   };
 
   return (
@@ -58,29 +166,53 @@ const ProjectList = () => {
       ) : (
         <div className="row">
           {projects.map((project) => (
-            <div key={project.id} className="col-md-6 col-lg-12 mb-4">
+            <div key={project.projectId} className="col-md-12 col-lg-12 mb-4">
               <div className="card shadow-sm h-100">
-                <div className="card-body ">
-                  <h5 className="card-title">{project.name}</h5>
-                  <p className="card-text text-muted">{project.description}</p>
-                  <p><strong>Start Date:</strong> {project.startdate}</p>
-                  <p><strong>End Date:</strong> {project.enddate}</p>
-                  <p><strong>Budget:</strong> ₹{project.budget}</p>
+                <div className="card-body">
+                  <h5
+                    className="card-title text-primary cursor-pointer"
+                    onClick={() => handleSelectProject(project)}  // Handle project selection
+                    style={{ cursor: "pointer" }}
+                  >
+                    {project.name}
+                  </h5>
+                  {selectedProject?.projectId === project.projectId && (
+                    <div>
+                      <p className="card-text text-muted">{project.description}</p>
+                      <p>
+                        <strong>Start Date:</strong> {new Date(project.startDate).toLocaleDateString()}
+                      </p>
+                      <p>
+                        <strong>End Date:</strong> {new Date(project.endDate).toLocaleDateString()}
+                      </p>
+                      <p><strong>Budget:</strong> ₹{project.budget}</p>
 
-                  <div className="d-flex justify-content-start gap-1 ">
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleEditClick(project)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-danger "
-                      onClick={() => handleDelete(project.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                      <div className="d-flex justify-content-start gap-1">
+                        <button className="btn btn-primary" onClick={() => handleEditClick(project)}>
+                          Edit
+                        </button>
+                        <button className="btn btn-danger" onClick={() => handleDelete(project.projectId)}>
+                          Delete
+                        </button>
+                      </div>
+
+                      {/* Team Members */}
+                      <div className="mt-4">
+                        <h5>Team Members:</h5>
+                        {teamMembers.length === 0 ? (
+                          <p>No team members assigned to this project.</p>
+                        ) : (
+                          <ul>
+                            {teamMembers.map((member) => (
+                              <li key={member.id}>
+                                {member.name} ({member.Subrole || "N/A"})
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -89,73 +221,76 @@ const ProjectList = () => {
       )}
 
       {/* Edit Project Modal */}
-      {showModal && ( // 👈 Only render modal when showModal is true
-        <div className="modal fade show d-block" tabIndex="-1">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit Project</h5>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form>
-                  <div className="mb-3">
-                    <label className="form-label">Project Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editData.name}
-                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea
-                      className="form-control"
-                      value={editData.description}
-                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Start Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={editData.startdate}
-                      onChange={(e) => setEditData({ ...editData, startdate: e.target.value })}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">End Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={editData.enddate}
-                      onChange={(e) => setEditData({ ...editData, enddate: e.target.value })}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Budget</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={editData.budget}
-                      onChange={(e) => setEditData({ ...editData, budget: e.target.value })}
-                    />
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-success" onClick={handleSaveChanges}>
-                  Save Changes
-                </button>
+      {showModal && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40" onClick={() => setShowModal(false)}></div>
+          <div className="modal fade show d-block" tabIndex="-1">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Edit Project</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <form>
+                    <div className="mb-3">
+                      <label className="form-label">Project Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Description</label>
+                      <textarea
+                        className="form-control"
+                        value={editData.description}
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Start Date</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={editData.startdate}
+                        onChange={(e) => setEditData({ ...editData, startdate: e.target.value })}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">End Date</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={editData.enddate}
+                        onChange={(e) => setEditData({ ...editData, enddate: e.target.value })}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Budget</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={editData.budget}
+                        onChange={(e) => setEditData({ ...editData, budget: e.target.value })}
+                      />
+                    </div>
+                  </form>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="button" className="btn btn-success" onClick={handleSaveChanges} disabled={!editData.name || !editData.description || !editData.budget}>
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -1,183 +1,210 @@
 import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 const MemberForm = () => {
-  const [selectedSubRole, setSelectedSubRole] = useState("");
-  const [selectedMember, setSelectedMember] = useState("");
-  const [availableUsers, setAvailableUsers] = useState([]);
-  const [filteredMembers, setFilteredMembers] = useState([]);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
 
+  // Fetch team members from backend
   useEffect(() => {
-    // ✅ Get logged-in user
-    const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    setLoggedInUser(storedUser);
-
-    // ✅ Fetch only active "Team Member" users
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const teamMembers = users.filter(
-      (user) => user.role === "Team Member" && user.status !== "inactive"
-    );
-    setAvailableUsers(teamMembers);
+    fetchTeamMembers();
   }, []);
 
-  // Extract unique sub-roles for dropdown
-  const uniqueSubRoles = [
-    ...new Set(availableUsers.map((user) => user.subRole || user.Subrole)),
-  ];
+  // Fetch projects from backend
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
-  // 🔄 Handle Sub-Role Selection
-  const handleSubRoleChange = (e) => {
-    const subRole = e.target.value;
-    setSelectedSubRole(subRole);
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/GetTeamMembersServlet", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-    // Filter team members by selected sub-role
-    const members = availableUsers.filter(
-      (user) =>
-        (user.subRole === subRole || user.Subrole === subRole) &&
-        user.role === "Team Member"
-    );
-    setFilteredMembers(members);
-    setSelectedMember("");
-    setSuccessMessage("");
-    setErrorMessage("");
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);  // Log the response data to debug
+        setTeamMembers(data || []); // Directly set the array if it is an array
+      } else {
+        console.error("Error fetching team members:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+    }
   };
 
-  // 👤 Handle Team Member Selection
-  const handleMemberChange = (e) => {
-    setSelectedMember(e.target.value);
-    setSuccessMessage("");
-    setErrorMessage("");
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/ViewProjectServlet", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);  // Log the response data to debug
+        setProjects(data.projects || []); // Assuming the response contains a 'projects' array or fallback to empty array
+      } else {
+        console.error("Error fetching projects:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
   };
 
-  // ✅ Handle Submit to localStorage
-  const handleSubmit = () => {
-    if (!selectedSubRole || !selectedMember) {
-      setErrorMessage("Please select both Sub-Role and Team Member.");
-      return;
+  // Handle checkbox selection for members
+  const handleSelectMember = (e, id) => {
+    setSelectedMembers((prevSelectedMembers) => {
+      if (e.target.checked) {
+        return [...prevSelectedMembers, id];
+      } else {
+        return prevSelectedMembers.filter(memberId => memberId !== id);
+      }
+    });
+  };
+
+  // Handle form submission to assign members to the selected project
+  const handleAssignMembers = async () => {
+    try {
+      // Ensure selectedProject is an integer
+    const projectId = parseInt(selectedProject, 10); // Convert to integer
+
+    // Ensure selectedMembers contains integers
+    const memberIds = selectedMembers.map(id => parseInt(id, 10));
+      const requestPayload = {
+        projectId: selectedProject,
+        memberIds: selectedMembers,
+      };
+      console.log("Request Payload: ", requestPayload); // Check the payload before sending
+  
+      const response = await fetch("http://localhost:8080/backend-servlet/AssignMembersToProjectServlet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestPayload),
+        credentials: "include",
+      });
+  
+      if (response.ok) {
+        alert("Members assigned successfully!");
+        setSelectedMembers([]); // Clear selected members
+      } else {
+        console.error("Error assigning members:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error assigning members:", error);
     }
-  
-    if (!loggedInUser || loggedInUser.role !== "Project Manager") {
-      setErrorMessage("Only Project Managers can add team members.");
-      return;
-    }
-  
-    // ✅ Generate or get teamId (Example: Using Project Manager's ID as teamId)
-    const teamId = loggedInUser.id || Date.now(); // Fallback to timestamp if ID not available
-  
-    const newTeamMember = {
-      name: selectedMember,
-      subRole: selectedSubRole,
-      id: Date.now(), // Unique ID for the member
-      teamId: teamId, // ✅ Assign teamId
-      addedBy: loggedInUser.username,
-    };
-  
-    // Get existing team members or initialize empty array
-    const storedTeamMembers = JSON.parse(localStorage.getItem("teamMembers")) || [];
-  
-    // ⚠️ Prevent Duplicate Assignments
-    const isDuplicate = storedTeamMembers.some(
-      (member) =>
-        member.name === selectedMember &&
-        member.addedBy === loggedInUser.username
-    );
-  
-    if (isDuplicate) {
-      setErrorMessage(`${selectedMember} is already added to your team.`);
-      return;
-    }
-  
-    // ✅ Add new team member
-    storedTeamMembers.push(newTeamMember);
-  
-    // Save updated list to localStorage
-    localStorage.setItem("teamMembers", JSON.stringify(storedTeamMembers));
-  
-    // 🎉 Show Success Message
-    setSuccessMessage(`${selectedMember} added successfully!`);
-    setErrorMessage("");
-  
-    // Reset form
-    setSelectedSubRole("");
-    setSelectedMember("");
-    setFilteredMembers([]);
   };
   
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100">
-      <div className="card p-4 shadow-lg w-100" style={{ maxWidth: "400px" }}>
-        <h2 className="text-center mb-4">Select Team Member by Sub-Role</h2>
+    <div className="container mt-4">
+      <h3 className="text-center mb-4">Assign Team Members to Projects</h3>
 
-        {/* 🔽 Sub-Role Dropdown */}
-        <div className="mb-3">
-          <label className="form-label w-100">
-            Select Sub-Role:
-            <select
-              className="form-control"
-              value={selectedSubRole}
-              onChange={handleSubRoleChange}
-              required
-            >
-              <option value="">-- Select Sub-Role --</option>
-              {uniqueSubRoles.map((subRole, index) => (
-                <option key={index} value={subRole}>
-                  {subRole}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* 👥 Team Member Dropdown */}
-        <div className="mb-3">
-          <label className="form-label w-100">
-            Select Team Member:
-            <select
-              className="form-control"
-              value={selectedMember}
-              onChange={handleMemberChange}
-              disabled={!selectedSubRole}
-              required
-            >
-              <option value="">
-                {selectedSubRole
-                  ? filteredMembers.length
-                    ? "-- Select Team Member --"
-                    : "No Members Found"
-                  : "Select a Sub-Role First"}
-              </option>
-              {filteredMembers.map((user, index) => (
-                <option key={index} value={user.name}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* ✅ Submit Button */}
-        <button
-          className="btn btn-dark w-100"
-          onClick={handleSubmit}
-          disabled={!selectedMember}
+      {/* Select Project */}
+      <div className="mb-4">
+        <label>Select Project: </label>
+        <select
+          className="form-control"
+          value={selectedProject}
+          onChange={(e) => setSelectedProject(e.target.value)}
         >
-          Add Team Member
-        </button>
+          <option value="">Select a project</option>
+          {projects && Array.isArray(projects) && projects.map((project) => (
+            <option key={project.projectId} value={project.projectId}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        {/* 🎉 Success & ⚠️ Error Messages */}
-        {successMessage && (
-          <div className="alert alert-success mt-3 text-center">
-            {successMessage}
-          </div>
-        )}
-        {errorMessage && (
-          <div className="alert alert-danger mt-3 text-center">
-            {errorMessage}
-          </div>
-        )}
+      {/* Team Members List */}
+      <div>
+        <h4>Team Members</h4>
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Select</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>SubRole</th>
+              <th>Phone</th>
+              <th>Company</th>
+              <th>bio</th>
+              <th>availability</th>
+              <th>experienceLevel</th>
+              <th>Profile Picture</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teamMembers.length === 0 ? (
+              <tr><td colSpan="7">Loading team members...</td></tr>
+            ) : (
+              teamMembers.map((member) => (
+                <tr key={member.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      onChange={(e) => handleSelectMember(e, member.id)}
+                    />
+                  </td>
+                  <td>{member.name}</td>
+                  <td>{member.email || "N/A"}</td>
+                  <td>{member.role}</td>
+                  <td>{member.subrole}</td>
+                  <td>{member.phone || "N/A"}</td>
+                  <td>{member.company || "N/A"}</td>
+                  <td>{member.bio}</td>
+                  <td>{member.availability}</td>
+                  <td>{member.experienceLevel}</td>
+                 
+                  <td>
+                    {member.profilePic ? (
+                      <img
+                        src={member.profilePic}
+                        alt="Profile"
+                        width="50"
+                        height="50"
+                        style={{ borderRadius: "50%" }}
+                      />
+                    ) : (
+                      <img
+                        src="https://via.placeholder.com/50"
+                        alt="No Profile"
+                        width="50"
+                        height="50"
+                        style={{ borderRadius: "50%" }}
+                      />
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Assign Button */}
+      <div className="text-center mt-4">
+        <button
+          className="btn btn-primary"
+          onClick={handleAssignMembers}
+          disabled={!selectedProject || selectedMembers.length === 0}
+        >
+          Assign Selected Members to Project
+        </button>
       </div>
     </div>
   );

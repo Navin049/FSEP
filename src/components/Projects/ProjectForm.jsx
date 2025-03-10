@@ -7,30 +7,39 @@ const ProjectForm = ({ onSubmit, project }) => {
   const [enddate, setenddate] = useState(project ? project.enddate : "");
   const [budget, setbudget] = useState(project ? project.budget : "");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newProject = { id: Date.now(), name, description, startdate, enddate, budget };
+    const newProject = { name, description, startdate, enddate, budget };
 
-    // Retrieve existing projects from localStorage
-    const storedProjects = JSON.parse(localStorage.getItem("projects")) || [];
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/CreateProjectServlet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newProject),
+        credentials:"include",
+      });
 
-    // Add new project to the array
-    storedProjects.push(newProject);
-
-    // Save updated array to localStorage
-    localStorage.setItem("projects", JSON.stringify(storedProjects));
-
-    // Pass data to parent component (if needed)
-    if (onSubmit) {
-      onSubmit(newProject);
+      if (response.ok) {
+        const data = await response.json();
+        // Notify the parent about the new project if needed
+        if (onSubmit) {
+          onSubmit(data); // You can return the response data, including the new project ID
+        }
+        // Optionally, clear form fields
+        setName("");
+        setDescription("");
+        setstartdate("");
+        setenddate("");
+        setbudget("");
+      } else {
+        alert("Error creating project.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while creating the project.");
     }
-
-    // Clear form fields
-    setName("");
-    setDescription("");
-    setstartdate("");
-    setenddate("");
-    setbudget("");
   };
 
   return (

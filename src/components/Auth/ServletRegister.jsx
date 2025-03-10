@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const ServletRegister = () => {
   const [userData, setUserData] = useState({
@@ -13,39 +14,72 @@ const ServletRegister = () => {
     profilePic: "",
     password: "",
     role: "Project manager",
+    Subrole: "",
+    availability: "",  // New field for availability
+    skills: "",        // New field for skills
+    experienceLevel: "" // New field for experience level
   });
+
+  const [errors, setErrors] = useState({}); // To store validation errors
+
+  const navigate = useNavigate();  // Initialize navigate function
+
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors = {};
+    const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const regexPhone = /^[0-9]{10}$/;  
+
+    if (!userData.name) newErrors.name = "Full name is required";
+    if (!userData.email) newErrors.email = "Email is required";
+    else if (!regexEmail.test(userData.email)) newErrors.email = "Invalid email format";
+    if (!userData.phone) newErrors.phone = "Phone number is required";
+    else if (!regexPhone.test(userData.phone)) newErrors.phone = "Phone number must be 10 digits";
+    if (!userData.company) newErrors.company = "Company name is required";
+    if (!userData.address) newErrors.address = "Address is required";
+    if (!userData.password) newErrors.password = "Password is required";
+    else if (userData.password.length < 6) newErrors.password = "Password must be at least 6 characters long";
+    if (!userData.skills) newErrors.skills = "Skills are required";
+    if (!userData.availability) newErrors.availability = "Availability is required";
+    if (!userData.experienceLevel) newErrors.experienceLevel = "Experience level is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Returns true if no errors
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-  
-    // Ensure all fields are filled
-    // if (!userData.name || !userData.email || !userData.password || !userData.role) {
-    //   alert("Please fill in all required fields.");
-    //   return;
-    // }
-  
-    try {
-      // Send data to the backend
-      const response = await fetch("http://localhost:8080/backend-servlet/RegisterServlet", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-  
 
-      if (!response.ok) {
-        alert(`HTTP error! Status: ${response.status}`);
+    if (!validateForm()) {
+      return; // Don't submit if there are validation errors
     }
 
-    const result = await response.json();
-    alert(result.message);
-} catch (error) {
-    console.error("Error registering user:", error);
-    alert(error);
-}
-};
+    try {
+      const response = await fetch("http://localhost:8080/backend-servlet/RegisterServlet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+        credentials: "include",
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response Headers:", response.headers);
+
+      const result = await response.json();
+      
+      console.log("Response Data:", result);
+
+      alert(result.message);
+
+      if (result.redirect) {
+        localStorage.setItem("loggedInUser", JSON.stringify({ email, role }));
+        navigate(result.redirect);
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      alert("Registration failed. Please try again.");
+    }
+  };
 
   // Handle profile picture upload
   const handleProfilePicUpload = (e) => {
@@ -60,22 +94,22 @@ const ServletRegister = () => {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3 ">
-      <div className="card p-4 shadow-lg w-100 " style={{ maxWidth: "400px" }}>
+    <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
+      <div className="card p-4 shadow-lg w-100" style={{ maxWidth: "400px" }}>
         <h2 className="text-center mb-4">Register</h2>
         <form onSubmit={handleRegister}>
-          
+
           {/* Full Name */}
-          <div className="mb-3 ">
+          <div className="mb-3">
             <label className="form-label">Full Name</label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${errors.name ? "is-invalid" : ""}`}
               placeholder="Enter full name"
               value={userData.name}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-              
             />
+            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
           </div>
 
           {/* Email */}
@@ -83,12 +117,12 @@ const ServletRegister = () => {
             <label className="form-label">Email</label>
             <input
               type="email"
-              className="form-control"
+              className={`form-control ${errors.email ? "is-invalid" : ""}`}
               placeholder="Enter email"
               value={userData.email}
               onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-              
             />
+            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
 
           {/* Phone */}
@@ -96,11 +130,12 @@ const ServletRegister = () => {
             <label className="form-label">Phone Number</label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${errors.phone ? "is-invalid" : ""}`}
               placeholder="Enter phone number"
               value={userData.phone}
               onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
             />
+            {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
           </div>
 
           {/* Company */}
@@ -108,11 +143,12 @@ const ServletRegister = () => {
             <label className="form-label">Company Name</label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${errors.company ? "is-invalid" : ""}`}
               placeholder="Enter company name"
               value={userData.company}
               onChange={(e) => setUserData({ ...userData, company: e.target.value })}
             />
+            {errors.company && <div className="invalid-feedback">{errors.company}</div>}
           </div>
 
           {/* Address */}
@@ -120,11 +156,12 @@ const ServletRegister = () => {
             <label className="form-label">Address</label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${errors.address ? "is-invalid" : ""}`}
               placeholder="Enter address"
               value={userData.address}
               onChange={(e) => setUserData({ ...userData, address: e.target.value })}
             />
+            {errors.address && <div className="invalid-feedback">{errors.address}</div>}
           </div>
 
           {/* Bio */}
@@ -162,12 +199,12 @@ const ServletRegister = () => {
             <label className="form-label">Password</label>
             <input
               type="password"
-              className="form-control"
+              className={`form-control ${errors.password ? "is-invalid" : ""}`}
               placeholder="Enter password"
               value={userData.password}
               onChange={(e) => setUserData({ ...userData, password: e.target.value })}
-              
             />
+            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
           </div>
 
           {/* Role Selection */}
@@ -180,7 +217,63 @@ const ServletRegister = () => {
             >
               <option value="Project manager">Project Manager</option>
               <option value="Team Member">Team Member</option>
-              <option value="Client">Client</option>
+              {/* <option value="Client">Client</option> */}
+            </select>
+          </div>
+
+          {/* Sub Role Selection */}
+          <div className="mb-3">
+            <label className="form-label">Sub Role</label>
+            <select
+              className="form-select"
+              value={userData.Subrole}
+              onChange={(e) => setUserData({ ...userData, Subrole: e.target.value })}
+            >
+              <option value="Developer">Developer</option>
+              <option value="Designer">Designer</option>
+              <option value="Manager">Manager</option>
+              <option value="QA">QA</option>
+              <option value="Tester">Tester</option>
+            </select>
+          </div>
+
+          {/* Availability Selection */}
+          <div className="mb-3">
+            <label className="form-label">Availability</label>
+            <select
+              className="form-select"
+              value={userData.availability}
+              onChange={(e) => setUserData({ ...userData, availability: e.target.value })}
+            >
+              <option value="available">Available</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </div>
+
+          {/* Skills */}
+          <div className="mb-3">
+            <label className="form-label">Skills</label>
+            <input
+              type="text"
+              className={`form-control ${errors.skills ? "is-invalid" : ""}`}
+              placeholder="Enter skills (comma-separated)"
+              value={userData.skills}
+              onChange={(e) => setUserData({ ...userData, skills: e.target.value })}
+            />
+            {errors.skills && <div className="invalid-feedback">{errors.skills}</div>}
+          </div>
+
+          {/* Experience Level */}
+          <div className="mb-3">
+            <label className="form-label">Experience Level</label>
+            <select
+              className="form-select"
+              value={userData.experienceLevel}
+              onChange={(e) => setUserData({ ...userData, experienceLevel: e.target.value })}
+            >
+              <option value="Junior">Junior</option>
+              <option value="Mid-level">Mid-level</option>
+              <option value="Senior">Senior</option>
             </select>
           </div>
 
