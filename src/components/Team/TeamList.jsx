@@ -132,7 +132,7 @@ const TeamList = () => {
       {/* Team Members List */}
       <div>
         <h4>Team Members</h4>
-        <table className="table table-striped ">
+        <table className="table table-striped">
           <thead>
             <tr>
               <th>Select</th>

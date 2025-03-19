@@ -8,7 +8,7 @@ function Team_Member_Sidebar() {
     <h3>Project Management System</h3>
     <ul>
       <li><Link to="/profile">👨🏻‍💻 Profile</Link></li><hr />
-      <li><Link to="/Dashboard/TeamMember_Dashboard">📊 Dashboard</Link></li><hr />
+      <li><Link to="/TeamMember_Dashboard">📊 Dashboard</Link></li><hr />
 
       {/* Tasks Section */}
       <li className="has-submenu">
@@ -19,7 +19,7 @@ function Team_Member_Sidebar() {
       </li><hr />
 
       {/* Team Section */}
-      <li><Link to="/team">👥 Team Members</Link></li><hr /> {/* View only */}
+      <li><Link to="Team/TeamMembers">👥 Team Members</Link></li><hr /> {/* View only */}
 
       <li><Link to="/logout">⤵️ Logout</Link></li>
     </ul>

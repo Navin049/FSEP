@@ -3,15 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const AdminLogin = () => {
-  const [adminData, setAdminData] = useState({ email: '', password: '' });
+  const [adminData, setAdminData] = useState({ email: '', password: '', role: 'Admin' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  // Hardcoded admin credentials (for demo purposes)
-  const validAdmin = {
-    email: 'admin@gmail.com',
-    password: 'admin123',
-  };
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -20,18 +14,33 @@ const AdminLogin = () => {
   };
 
   // Handle login form submission
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (
-      adminData.email === validAdmin.email &&
-      adminData.password === validAdmin.password
-    ) {
-      // Successful login
-      localStorage.setItem('adminLoggedIn', 'true');
-      navigate('/admin-dashboard'); // Redirect to Admin Dashboard
+    const response = await fetch("http://localhost:8080/backend-servlet/AdminLoginServlet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // Send data as JSON
+      },
+      body: JSON.stringify(adminData),  // Send the admin data (email, password, role) as JSON
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // If login is successful, save user info in localStorage
+      alert("✅ Login successful!");
+      localStorage.setItem("loggedInUser", JSON.stringify({ email: adminData.email, role: adminData.role }));
+
+      // Redirect to the admin dashboard based on role
+      if (adminData.role === 'Admin') {
+        navigate('/admin-dashboard'); // For Admin, go to /admin-dashboard
+      } else {
+        navigate('/home'); // Default page (e.g., user dashboard, home, etc.)
+      }
     } else {
-      setError('Invalid email or password');
+      // If login fails, show the error message
+      alert(`❌ ${result.message || "Login failed!"}`);
     }
   };
 
@@ -77,9 +86,7 @@ const AdminLogin = () => {
                 </div>
               </form>
             </div>
-            <div className="card-footer text-muted text-center">
-              {/* <small>Default Admin: admin@example.com | Password: admin123</small> */}
-            </div>
+            <div className="card-footer text-muted text-center"></div>
           </div>
         </div>
       </div>

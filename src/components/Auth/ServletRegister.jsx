@@ -94,77 +94,72 @@ const ServletRegister = () => {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
-      <div className="card p-4 shadow-lg w-100" style={{ maxWidth: "400px" }}>
+   <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
+      <div className="card p-4 shadow-lg" style={{ maxWidth: "600px", width: "100%" }}>
         <h2 className="text-center mb-4">Register</h2>
         <form onSubmit={handleRegister}>
-
-          {/* Full Name */}
-          <div className="mb-3">
-            <label className="form-label">Full Name</label>
-            <input
-              type="text"
-              className={`form-control ${errors.name ? "is-invalid" : ""}`}
-              placeholder="Enter full name"
-              value={userData.name}
-              onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-            />
-            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+          <div className="row">
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Full Name</label>
+              <input
+                type="text"
+                className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                placeholder="Enter full name"
+                value={userData.name}
+                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+              />
+              {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                placeholder="Enter email"
+                value={userData.email}
+                onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+              />
+              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+            </div>
           </div>
 
-          {/* Email */}
-          <div className="mb-3">
-            <label className="form-label">Email</label>
-            <input
-              type="email"
-              className={`form-control ${errors.email ? "is-invalid" : ""}`}
-              placeholder="Enter email"
-              value={userData.email}
-              onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-            />
-            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+          <div className="row">
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Phone Number</label>
+              <input
+                type="text"
+                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
+                placeholder="Enter phone number"
+                value={userData.phone}
+                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+              />
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Company Name</label>
+              <input
+                type="text"
+                className={`form-control ${errors.company ? "is-invalid" : ""}`}
+                placeholder="Enter company name"
+                value={userData.company}
+                onChange={(e) => setUserData({ ...userData, company: e.target.value })}
+              />
+              {errors.company && <div className="invalid-feedback">{errors.company}</div>}
+            </div>
           </div>
 
-          {/* Phone */}
-          <div className="mb-3">
-            <label className="form-label">Phone Number</label>
-            <input
-              type="text"
-              className={`form-control ${errors.phone ? "is-invalid" : ""}`}
-              placeholder="Enter phone number"
-              value={userData.phone}
-              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-            />
-            {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
-          </div>
-
-          {/* Company */}
-          <div className="mb-3">
-            <label className="form-label">Company Name</label>
-            <input
-              type="text"
-              className={`form-control ${errors.company ? "is-invalid" : ""}`}
-              placeholder="Enter company name"
-              value={userData.company}
-              onChange={(e) => setUserData({ ...userData, company: e.target.value })}
-            />
-            {errors.company && <div className="invalid-feedback">{errors.company}</div>}
-          </div>
-
-          {/* Address */}
           <div className="mb-3">
             <label className="form-label">Address</label>
             <input
               type="text"
               className={`form-control ${errors.address ? "is-invalid" : ""}`}
-              placeholder="Enter address"
+              placeholder="Enter permanent address"
               value={userData.address}
               onChange={(e) => setUserData({ ...userData, address: e.target.value })}
             />
             {errors.address && <div className="invalid-feedback">{errors.address}</div>}
           </div>
 
-          {/* Bio */}
           <div className="mb-3">
             <label className="form-label">Bio</label>
             <textarea
@@ -175,15 +170,9 @@ const ServletRegister = () => {
             ></textarea>
           </div>
 
-          {/* Profile Picture Upload */}
           <div className="mb-3">
             <label className="form-label">Profile Picture</label>
-            <input
-              type="file"
-              className="form-control"
-              accept="image/*"
-              onChange={handleProfilePicUpload}
-            />
+            <input type="file" className="form-control" accept="image/*" onChange={handleProfilePicUpload} />
             {userData.profilePic && (
               <img
                 src={userData.profilePic}
@@ -194,34 +183,31 @@ const ServletRegister = () => {
             )}
           </div>
 
-          {/* Password */}
-          <div className="mb-3">
-            <label className="form-label">Password</label>
-            <input
-              type="password"
-              className={`form-control ${errors.password ? "is-invalid" : ""}`}
-              placeholder="Enter password"
-              value={userData.password}
-              onChange={(e) => setUserData({ ...userData, password: e.target.value })}
-            />
-            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+          <div className="row">
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                placeholder="Enter password"
+                value={userData.password}
+                onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+              />
+              {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Role</label>
+              <select
+                className="form-select"
+                value={userData.role}
+                onChange={(e) => setUserData({ ...userData, role: e.target.value })}
+              >
+                <option value="Project manager">Project Manager</option>
+                <option value="Team Member">Team Member</option>
+              </select>
+            </div>
           </div>
 
-          {/* Role Selection */}
-          <div className="mb-3">
-            <label className="form-label">Role</label>
-            <select
-              className="form-select"
-              value={userData.role}
-              onChange={(e) => setUserData({ ...userData, role: e.target.value })}
-            >
-              <option value="Project manager">Project Manager</option>
-              <option value="Team Member">Team Member</option>
-              {/* <option value="Client">Client</option> */}
-            </select>
-          </div>
-
-          {/* Sub Role Selection */}
           <div className="mb-3">
             <label className="form-label">Sub Role</label>
             <select
