@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
-const ProjectList = () => {
+const ProjectList = ({projectId}) => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]); // State for team members
@@ -19,6 +19,10 @@ const ProjectList = () => {
   // Load projects from backend when the component mounts
   useEffect(() => {
     fetchProjects();
+    if (!projectId) {
+      console.log("Error: projectId is missing.");
+      return;
+    }
   }, []);
 
   const fetchProjects = async () => {
@@ -223,8 +227,11 @@ const ProjectList = () => {
       {/* Edit Project Modal */}
       {showModal && (
         <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40" onClick={() => setShowModal(false)}></div>
-          <div className="modal fade show d-block" tabIndex="-1">
+         <div
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40"
+            onClick={() => setShowModal(false)} // Close modal when clicking outside
+          ></div>
+          <div className="modal fade show d-block mt-30" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">

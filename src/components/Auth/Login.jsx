@@ -24,11 +24,11 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return; // Don't submit if there are validation errors
     }
-
+  
     try {
       const response = await fetch("http://localhost:8080/backend-servlet/LoginServlet", {
         method: "POST",
@@ -42,27 +42,38 @@ const Login = () => {
         }),
         credentials: "include", 
       });
-
+  
       const data = await response.json();
-
+      
+      console.log('Response data:', data); // Log the data object to check its contents
+  
       if (response.ok) {
-        // If login is successful, save user info in localStorage
-        alert("✅ Login successful!");
-        localStorage.setItem("loggedInUser", JSON.stringify({ email, role }));
-
-        // Redirect based on the role from the response
-        if (data.redirect) {
-          navigate(data.redirect);
+        // If HTTP request was successful, check if message indicates success
+        if (data.message === 'Login successful!') {
+          alert("✅ Login successful!");
+          localStorage.setItem("loggedInUser", JSON.stringify({ email, role }));
+  
+          // Check if `data.redirect` exists and if it's a valid URL or path
+          if (data.redirect) {
+            console.log('Redirecting to:', data.redirect); // Log the redirect URL
+            navigate(data.redirect); // Perform navigation
+          } else {
+            alert('❌ Redirect path is missing in response.');
+          }
+        } else {
+          // If message is not 'Login successful!', display the message
+          alert(`❌ ${data.message || "Login failed!"}`);
         }
       } else {
-        // If login fails, show the error message
-        alert(`❌ ${data.message || "Login failed!"}`);
+        // If HTTP request fails, show a generic error
+        alert("❌ Login failed due to server error.");
       }
     } catch (error) {
       console.error("Error during login:", error);
       alert("❌ An error occurred while logging in.");
     }
   };
+  
 
   return (
     <div

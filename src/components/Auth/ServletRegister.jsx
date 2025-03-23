@@ -72,7 +72,7 @@ const ServletRegister = () => {
       alert(result.message);
 
       if (result.redirect) {
-        localStorage.setItem("loggedInUser", JSON.stringify({ email, role }));
+        localStorage.setItem("loggedInUser", JSON.stringify({ email: userData.email, role: userData.role }));
         navigate(result.redirect);
       }
     } catch (error) {

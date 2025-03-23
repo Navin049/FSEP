@@ -31,27 +31,49 @@ const TeamMembers = ({ projectId }) => {
   }, [projectId]);
 
   return (
-    <div>
-      {error && <p>{error}</p>}
+    <div className="container mt-5">
+      {error && <div className="alert alert-danger">{error}</div>}
+
       {projectDetails ? (
         <div>
-          <h1>Project: {projectDetails.projectName}</h1>
-          <h3>Project Manager: {projectDetails.projectManager}</h3>
-          <h3>Team Members:</h3>
-          {projectDetails.members.length === 0 ? (
-            <p>No team members assigned to this project.</p>
-          ) : (
-            <ul>
-              {projectDetails.members.map((member) => (
-                <li key={member.id}>
-                  <strong>{member.name}</strong> - {member.Subrole}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="card mb-4">
+            <div className="card-header bg-primary text-white">
+              <h1 className="card-title mb-0">{projectDetails.projectName}</h1>
+            </div>
+            <div className="card-body">
+              <h3 className="text-muted">Project Manager: {projectDetails.projectManager}</h3>
+              <hr />
+              <h4 className="mt-3">Team Members:</h4>
+              {projectDetails.members.length === 0 ? (
+                <div className="alert alert-warning mt-3">
+                  No team members assigned to this project.
+                </div>
+              ) : (
+                <ul className="list-group mt-3">
+                  {projectDetails.members.map((member) => (
+                    <li
+                      key={member.id}
+                      className="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        <strong>{member.name}</strong>
+                        <br />
+                        <span className="text-muted">{member.Subrole}</span>
+                      </div>
+                      {/* <button className="btn btn-outline-info btn-sm">View Profile</button> */}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       ) : (
-        <p>Loading project details...</p>
+        <div className="d-flex justify-content-center">
+          <div className="spinner-border" role="status">
+            <span className="sr-only">Loading...</span>
+          </div>
+        </div>
       )}
     </div>
   );

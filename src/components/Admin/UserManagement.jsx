@@ -44,19 +44,20 @@ const UserManagement = () => {
   
 
   // Handle the delete action
-  const handleDelete = async () => {
-    const response = await fetch("http://localhost:8080/backend-servlet/UserManagementServlet", {
-      method: "DELETE",
+  const handleDelete = async (user) => {
+    const response = await fetch("http://localhost:8080/backend-servlet/UserManagementDeleteServlet", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(deleteUser),
+      body: JSON.stringify({id: user.id}),
       credentials: "include",
     });
 
     if (response.ok) {
       const DeleteData = await response.json();
-      setDeleteUser(DeleteData);
+      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== deleteResponse.id));
+      alert("User deleted successfully.");
     } else {
       alert("Failed to delete users");
     }
@@ -85,20 +86,22 @@ const UserManagement = () => {
   // Save edited user data
   const handleSave = async () => {
     console.log("Saving user data:", editUser);
-    const response = await fetch("http://localhost:8080/backend-servlet/UserManagementServlet", {
+    const response = await fetch("http://localhost:8080/backend-servlet/UserManagementUpdateServlet", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(editUser),
-      credentials: "include",
+      // credentials: "include",
     });
-  
+
     if (response.ok) {
-      const EditData = await response.json();
-      console.log("User data saved successfully:", EditData);
-      setEditUser(EditData);
+      const updatedUser = await response.json();
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      );
       setShowModal(false); // Close the modal after save
+      alert("User updated successfully.");
     } else {
       console.error("Failed to edit user:", response.statusText);
       alert("Failed to edit user");

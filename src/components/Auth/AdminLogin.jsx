@@ -45,9 +45,18 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="container mt-5">
+    <div
+    className="w-100 d-flex justify-content-center align-items-center"
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      minHeight: "100vh",
+    }}
+  >
       <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-12">
+        <div className="col-md-12 col-lg-12">
           <div className="card shadow-lg">
             <div className="card-header text-center bg-primary text-white">
               <h3>Admin Login</h3>
@@ -86,7 +95,7 @@ const AdminLogin = () => {
                 </div>
               </form>
             </div>
-            <div className="card-footer text-muted text-center"></div>
+            {/* <div className="card-footer text-muted text-center"></div> */}
           </div>
         </div>
       </div>

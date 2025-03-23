@@ -29,6 +29,8 @@ import Profile from "./components/Dashboard/Profile";
 import TeamMember_Dashboard from "./components/Dashboard/TeamMember_Dashboard";
 import ServletRegister from "./components/Auth/ServletRegister";
 import UserManagement from "./components/Admin/UserManagement";
+import ProjectManagement from "./components/Admin/ProjectManagement";
+import TaskManagement from "./components/Admin/TaskManagement";
 import AdminSidebar from "./components/Shared/AdminSidebar";
 
 
@@ -42,7 +44,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<Profile/>}/>
           <Route path="/dashboard" element={<Dashboard projectId={projectId}/>} />
-          <Route path="/projects" element={<ProjectList />} />
+          <Route path="/projects" element={<ProjectList projectId={projectId}/>} />
           <Route path="/projects/ProjectForm" element={<ProjectForm />} />
           <Route path="/tasks" element={<TaskList />} />
           <Route path="/tasks/TaskForm" element={<TaskForm />} />
@@ -60,6 +62,8 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-users" element={<UserManagement />} />
         <Route path="/AdminSidebar" element={<AdminSidebar />} />
+        <Route path="/admin-projects" element={<ProjectManagement />} />
+        <Route path="/admin-tasks" element={<TaskManagement projectId={projectId} />} />
         <Route path="*" element={<AdminLogin />} /> {/* Default Route */}
         </Routes>
       </Layout>
