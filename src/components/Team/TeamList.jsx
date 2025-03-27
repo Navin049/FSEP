@@ -7,14 +7,12 @@ const TeamList = () => {
   const [projects, setProjects] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
 
-  // Fetch team members from backend
   useEffect(() => {
     fetchTeamMembers();
-  }, []);
-
-  // Fetch projects from backend
-  useEffect(() => {
     fetchProjects();
   }, []);
 
@@ -22,16 +20,12 @@ const TeamList = () => {
     try {
       const response = await fetch("http://localhost:8080/backend-servlet/GetTeamMembersServlet", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
-
       if (response.ok) {
         const data = await response.json();
-        console.log(data);  // Log the response data to debug
-        setTeamMembers(data || []); // Directly set the array if it is an array
+        setTeamMembers(data || []);
       } else {
         console.error("Error fetching team members:", response.statusText);
       }
@@ -44,16 +38,12 @@ const TeamList = () => {
     try {
       const response = await fetch("http://localhost:8080/backend-servlet/ViewProjectServlet", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
-
       if (response.ok) {
         const data = await response.json();
-        console.log(data);  // Log the response data to debug
-        setProjects(data.projects || []); // Assuming the response contains a 'projects' array or fallback to empty array
+        setProjects(data.projects || []);
       } else {
         console.error("Error fetching projects:", response.statusText);
       }
@@ -62,43 +52,29 @@ const TeamList = () => {
     }
   };
 
-  // Handle checkbox selection for members
   const handleSelectMember = (e, id) => {
-    setSelectedMembers((prevSelectedMembers) => {
-      if (e.target.checked) {
-        return [...prevSelectedMembers, id];
-      } else {
-        return prevSelectedMembers.filter(memberId => memberId !== id);
-      }
-    });
+    setSelectedMembers((prev) =>
+      e.target.checked ? [...prev, id] : prev.filter((memberId) => memberId !== id)
+    );
   };
 
-  // Handle form submission to assign members to the selected project
   const handleAssignMembers = async () => {
     try {
-      // Ensure selectedProject is an integer
-    const projectId = parseInt(selectedProject, 10); // Convert to integer
-
-    // Ensure selectedMembers contains integers
-    const memberIds = selectedMembers.map(id => parseInt(id, 10));
       const requestPayload = {
-        projectId: selectedProject,
-        memberIds: selectedMembers,
+        projectId: parseInt(selectedProject, 10),
+        memberIds: selectedMembers.map((id) => parseInt(id, 10)),
       };
-      console.log("Request Payload: ", requestPayload); // Check the payload before sending
-  
+
       const response = await fetch("http://localhost:8080/backend-servlet/AssignMembersToProjectServlet", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestPayload),
         credentials: "include",
       });
-  
+
       if (response.ok) {
         alert("Members assigned successfully!");
-        setSelectedMembers([]); // Clear selected members
+        setSelectedMembers([]);
       } else {
         console.error("Error assigning members:", response.statusText);
       }
@@ -106,13 +82,48 @@ const TeamList = () => {
       console.error("Error assigning members:", error);
     }
   };
-  
+
+  const filteredAndSortedMembers = teamMembers
+    .filter((member) =>
+      member.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a[sortField] > b[sortField] ? 1 : -1;
+      } else {
+        return a[sortField] < b[sortField] ? 1 : -1;
+      }
+    });
 
   return (
     <div className="container mt-4">
       <h3 className="text-center mb-4">Assign Team Members to Projects</h3>
 
-      {/* Select Project */}
+      <div className="d-flex justify-content-between mb-3">
+        <input
+          type="text"
+          className="form-control w-50"
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="form-control w-25"
+          onChange={(e) => setSortField(e.target.value)}
+          value={sortField}
+        >
+          <option value="name">Sort by Name</option>
+          <option value="role">Sort by Role</option>
+          <option value="experienceLevel">Sort by Experience</option>
+        </select>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+        >
+          {sortOrder === "asc" ? "⬆️ Ascending" : "⬇️ Descending"}
+        </button>
+      </div>
+
       <div className="mb-4">
         <label>Select Project: </label>
         <select
@@ -121,7 +132,7 @@ const TeamList = () => {
           onChange={(e) => setSelectedProject(e.target.value)}
         >
           <option value="">Select a project</option>
-          {projects && Array.isArray(projects) && projects.map((project) => (
+          {projects.map((project) => (
             <option key={project.projectId} value={project.projectId}>
               {project.name}
             </option>
@@ -129,74 +140,38 @@ const TeamList = () => {
         </select>
       </div>
 
-      {/* Team Members List */}
-      <div>
-        <h4>Team Members</h4>
-        <table className="table table-striped">
-          <thead>
+      <table className="table table-striped">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Experience</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredAndSortedMembers.length === 0 ? (
             <tr>
-              <th>Select</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>SubRole</th>
-              <th>Phone</th>
-              <th>Company</th>
-              <th>bio</th>
-              <th>availability</th>
-              <th>experienceLevel</th>
-              <th>Profile Picture</th>
+              <td colSpan="4">No team members found.</td>
             </tr>
-          </thead>
-          <tbody>
-            {teamMembers.length === 0 ? (
-              <tr><td colSpan="7">Loading team members...</td></tr>
-            ) : (
-              teamMembers.map((member) => (
-                <tr key={member.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      onChange={(e) => handleSelectMember(e, member.id)}
-                    />
-                  </td>
-                  <td>{member.name}</td>
-                  <td>{member.email || "N/A"}</td>
-                  <td>{member.role}</td>
-                  <td>{member.subrole}</td>
-                  <td>{member.phone || "N/A"}</td>
-                  <td>{member.company || "N/A"}</td>
-                  <td>{member.bio}</td>
-                  <td>{member.availability}</td>
-                  <td>{member.experienceLevel}</td>
-                 
-                  <td>
-                    {member.profilePic ? (
-                      <img
-                        src={member.profilePic}
-                        alt="Profile"
-                        width="50"
-                        height="50"
-                        style={{ borderRadius: "50%" }}
-                      />
-                    ) : (
-                      <img
-                        src="https://via.placeholder.com/50"
-                        alt="No Profile"
-                        width="50"
-                        height="50"
-                        style={{ borderRadius: "50%" }}
-                      />
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+          ) : (
+            filteredAndSortedMembers.map((member) => (
+              <tr key={member.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleSelectMember(e, member.id)}
+                  />
+                </td>
+                <td>{member.name}</td>
+                <td>{member.role}</td>
+                <td>{member.experienceLevel}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
 
-      {/* Assign Button */}
       <div className="text-center mt-4">
         <button
           className="btn btn-primary"
