@@ -18,17 +18,17 @@ const TaskList = () => {
   });
   const [projects, setProjects] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [isTeamMember, setIsTeamMember] = useState(false); // Store if the user is a team member
+  const [isTeamMember, setIsTeamMember] = useState(false);
 
-  // Load tasks and check if the user is a team member when the component mounts
   useEffect(() => {
+    console.log("Fetching tasks...");
     fetchTasks();
     checkIfTeamMember();
   }, []);
 
-  // Function to check if the user is a team member (replace this with your actual logic)
   const checkIfTeamMember = async () => {
     try {
+      console.log("Checking if user is a team member...");
       const response = await fetch(
         "http://localhost:8080/backend-servlet/CheckIfTeamMemberServlet",
         {
@@ -37,7 +37,8 @@ const TaskList = () => {
         }
       );
       const data = await response.json();
-      setIsTeamMember(data.isTeamMember); // Assume API response has a field "isTeamMember"
+      console.log("User team membership:", data);
+      setIsTeamMember(data.isTeamMember);
     } catch (error) {
       console.error("Error checking team membership:", error);
     }
@@ -45,6 +46,7 @@ const TaskList = () => {
 
   const fetchProjects = async () => {
     try {
+      console.log("Fetching projects...");
       const projectsRes = await fetch(
         "http://localhost:8080/backend-servlet/ViewProjectServlet",
         {
@@ -52,6 +54,7 @@ const TaskList = () => {
         }
       );
       const projectsData = await projectsRes.json();
+      console.log('Fetched projects:', projectsData);
       setProjects(projectsData.projects || []);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -60,6 +63,7 @@ const TaskList = () => {
 
   const fetchTeamMembers = async (projectId) => {
     try {
+      console.log("Fetching team members for project ID:", projectId);
       const response = await fetch(
         "http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet",
         {
@@ -71,16 +75,21 @@ const TaskList = () => {
           credentials: "include",
         }
       );
-
       const teamMembersData = await response.json();
-      setTeamMembers(teamMembersData);
+      console.log("Fetched team members:", teamMembersData);
+  
+      // Ensure teamMembersData contains the members array
+      setTeamMembers(teamMembersData.members || []);
     } catch (error) {
       console.error("Error fetching team members:", error);
+      setTeamMembers([]); // Fallback to an empty array in case of an error
     }
   };
+  
 
   const fetchTasks = async () => {
     try {
+      console.log("Fetching tasks...");
       const response = await fetch(
         "http://localhost:8080/backend-servlet/ViewTaskServlet",
         {
@@ -91,8 +100,8 @@ const TaskList = () => {
           credentials: "include",
         }
       );
-
       const data = await response.json();
+      console.log("Fetched tasks:", data);
       setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -100,6 +109,7 @@ const TaskList = () => {
   };
 
   const handleEditClick = (task) => {
+    console.log("Handling edit for task:", task);
     setSelectedTask(task);
     setEditData({
       id: task.id,
@@ -116,21 +126,22 @@ const TaskList = () => {
   };
 
   const handleProjectChange = (e) => {
+    console.log("Project changed:", e.target.value);
     const selectedProjectName = e.target.value;
     setEditData({ ...editData, projectName: selectedProjectName });
 
-    // Find the project ID corresponding to the selected project name
     const selectedProject = projects.find(
       (project) => project.name === selectedProjectName
     );
 
     if (selectedProject) {
-      // Fetch team members for the selected project
+      console.log("Fetching team members for project:", selectedProject);
       fetchTeamMembers(selectedProject.projectId);
     }
   };
 
   const handleSaveChanges = async () => {
+    console.log("Saving changes for task:", editData);
     if (!editData.id) {
       console.error("Task ID is missing");
       return;
@@ -149,6 +160,7 @@ const TaskList = () => {
       );
 
       if (response.ok) {
+        console.log("Task updated successfully");
         fetchTasks();
         setShowModal(false);
       } else {
@@ -164,6 +176,7 @@ const TaskList = () => {
       "Are you sure you want to delete this task?"
     );
     if (isConfirmed) {
+      console.log("Deleting task with ID:", id);
       try {
         const response = await fetch(
           `http://localhost:8080/backend-servlet/DeleteTaskServlet`,
@@ -177,6 +190,7 @@ const TaskList = () => {
         );
 
         if (response.ok) {
+          console.log("Task deleted successfully");
           fetchTasks();
         } else {
           console.error("Error deleting task:", response.statusText);
@@ -374,7 +388,7 @@ const TaskList = () => {
                       <select
                         className="form-control"
                         value={editData.projectName}
-                        onChange={handleProjectChange} // Call the function to update the project and fetch team members
+                        onChange={handleProjectChange}
                         disabled={isTeamMember}
                       >
                         <option value="">Select a project</option>
@@ -393,18 +407,12 @@ const TaskList = () => {
                     className="btn btn-secondary"
                     onClick={() => setShowModal(false)}
                   >
-                    Cancel
+                    Close
                   </button>
                   <button
                     type="button"
-                    className="btn btn-success"
+                    className="btn btn-primary"
                     onClick={handleSaveChanges}
-                    disabled={
-                      !editData.title ||
-                      !editData.description ||
-                      !editData.status ||
-                      !editData.deadline
-                    }
                   >
                     Save Changes
                   </button>

@@ -43,7 +43,17 @@ const ProjectForm = ({ onSubmit, project }) => {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
+    <div
+    className="w-100 d-flex justify-content-center align-items-center"
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      minHeight: "100vh",
+      margin:"auto"
+    }}
+  >
       <div className="card p-4 shadow-lg w-100" style={{ maxWidth: "400px" }}>
         <form onSubmit={handleSubmit}>
           <h2 className="text-center mb-4">{project ? "Edit Project" : "Create New Project"}</h2>

@@ -30,6 +30,21 @@ body {
   min-height: 100vh;
 }
 
+body.register-page {
+  margin: 0;
+  display: flex;
+  justify-content: center; /* Horizontally center */
+  align-items: center; /* Vertically center */
+  min-height: 100vh;
+  min-width: 320px;
+}
+
+.register-page .main-content {
+  width: 100%;
+  padding: 20px;
+}
+
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import "../../App.css";
 
 const ServletRegister = () => {
   const [userData, setUserData] = useState({
@@ -13,16 +14,23 @@ const ServletRegister = () => {
     bio: "",
     profilePic: "",
     password: "",
-    role: "Project manager",
-    Subrole: "",
-    availability: "",  // New field for availability
+    role: "Project Manager",
+    Subrole: "Developer",
+    availability: "Available",  // New field for availability
     skills: "",        // New field for skills
-    experienceLevel: "" // New field for experience level
+    experienceLevel: "Juinor" // New field for experience level
   });
 
   const [errors, setErrors] = useState({}); // To store validation errors
 
   const navigate = useNavigate();  // Initialize navigate function
+
+ // Set a class or ID for the register page
+ React.useEffect(() => {
+  document.body.classList.add('register-page');
+  return () => document.body.classList.remove('register-page');
+}, []);
+
 
   // Validate form fields
   const validateForm = () => {
@@ -94,7 +102,8 @@ const ServletRegister = () => {
   };
 
   return (
-   <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
+    <div className="container-layout">
+    <div className="main-content">
       <div className="card p-4 shadow-lg" style={{ maxWidth: "600px", width: "100%" }}>
         <h2 className="text-center mb-4">Register</h2>
         <form onSubmit={handleRegister}>
@@ -274,6 +283,7 @@ const ServletRegister = () => {
           </p>
         </form>
       </div>
+    </div>
     </div>
   );
 };

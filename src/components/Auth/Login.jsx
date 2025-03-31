@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Link, useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Using react-icons library for Bootstrap Icons
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Project Manager"); // Default role
   const [errors, setErrors] = useState({}); // To store validation errors
+  const [showPassword, setShowPassword] = useState(false); // Password visibility state
   const navigate = useNavigate(); // Redirect after login
 
   // Validate form fields
@@ -44,14 +46,17 @@ const Login = () => {
       });
   
       const data = await response.json();
-      
+  
       console.log('Response data:', data); // Log the data object to check its contents
   
       if (response.ok) {
         // If HTTP request was successful, check if message indicates success
         if (data.message === 'Login successful!') {
           alert("✅ Login successful!");
-          localStorage.setItem("loggedInUser", JSON.stringify({ email, role }));
+  
+          // Store email, role, and userId in localStorage
+          const { userId } = data; // Assuming the backend returns the userId
+          localStorage.setItem("loggedInUser", JSON.stringify({ email, role, userId }));
   
           // Check if `data.redirect` exists and if it's a valid URL or path
           if (data.redirect) {
@@ -103,10 +108,10 @@ const Login = () => {
             {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
 
-          <div className="mb-3">
+          <div className="mb-3 position-relative">
             <label className="form-label">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               className={`form-control ${errors.password ? "is-invalid" : ""}`}
               placeholder="Enter password"
               name="password"
@@ -115,6 +120,27 @@ const Login = () => {
               required
             />
             {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+
+            {/* Password visibility toggle icon */}
+            <button
+              type="button"
+              className="position-absolute translate-middle-y border-0 bg-transparent"
+              style={{
+                top:"48px",
+                right: "-20px",
+                cursor: "pointer",
+                fontSize: "1.5rem",
+                color: "#007bff",
+              }}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {/* Use Bootstrap icons (react-icons in this case) */}
+              {showPassword ? (
+                <FaEyeSlash style={{ fontSize: '1.5rem', color: '#007bff' }} />
+              ) : (
+                <FaEye style={{ fontSize: '1.5rem', color: '#007bff' }} />
+              )}
+            </button>
           </div>
 
           <div className="mb-3">

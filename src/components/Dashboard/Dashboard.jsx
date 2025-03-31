@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import ProgressChart from "./ProgressChart"; // Assuming you have this component
+import ProgressChart from "./ProgressChart";
 import ActivityFeed from "./ActivityFeed"; // Assuming you have this component
 
-const Dashboard = ({ projectId }) => { // Destructure projectId from props
+const Dashboard = ({ projectId }) => {
   const [tasks, setTasks] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -12,6 +12,7 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
   });
   const [teamMembers, setTeamMembers] = useState([]);
   const [projects, setProjects] = useState(0);
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState([]); // New state for upcoming deadlines
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -20,8 +21,7 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
       console.log("Error: projectId is missing.");
       return;
     }
-    
-    // Fetch dashboard data from the backend
+
     const fetchDashboardData = async () => {
       try {
         const response = await fetch("http://localhost:8080/backend-servlet/DashboardServlet", {
@@ -41,6 +41,7 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
             pendingTasks: data.pendingTasks || 0,
           });
           setProjects(data.totalProjects || 0);
+          setUpcomingDeadlines(data.upcomingDeadlines || []); // Set the upcoming deadlines
           setLoading(false);
         } else {
           console.error("Failed to fetch dashboard data", response.status);
@@ -52,7 +53,6 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
       }
     };
 
-    // Fetch team members for the specific project
     const fetchTeamMembers = async () => {
       try {
         const response = await fetch("http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet", {
@@ -60,13 +60,16 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Include credentials (cookies) if needed
-          body: JSON.stringify({ projectId: projectId }), // Pass the projectId in the request body
+          credentials: "include", 
+          body: JSON.stringify({ projectId: projectId }),
         });
-
+    
         if (response.ok) {
           const data = await response.json();
-          setTeamMembers(data); // Set the team members in state
+          console.log("Fetched team members:", data);  // Log the data to check its structure
+    
+          // Access the 'members' array from the response object
+          setTeamMembers(data.members || []); // Use the 'members' array from the response
         } else {
           console.error("Failed to fetch team members", response.status);
         }
@@ -75,10 +78,11 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
         alert("Failed to fetch team members. Please try again.");
       }
     };
+    
 
     fetchDashboardData();
     fetchTeamMembers();
-  }, [navigate, projectId]); // Make sure to include projectId in the dependency array
+  }, [navigate, projectId]);
 
   if (loading) {
     return (
@@ -91,7 +95,7 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-4" style={{width:"200%",margin:"auto"}}>
       <h1 className="text-center mb-4">Project Management Dashboard</h1>
 
       {/* Project Overview */}
@@ -139,7 +143,7 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
       />
 
       {/* Team Members List */}
-      <div className="card mt-4">
+      {/* <div className="card mt-4">
         <div className="card-body">
           <h5 className="card-title">Team Members</h5>
           {teamMembers.length > 0 ? (
@@ -154,10 +158,26 @@ const Dashboard = ({ projectId }) => { // Destructure projectId from props
             <p>No team members added.</p>
           )}
         </div>
+      </div> */}
+
+      {/* Upcoming Deadlines */}
+      <div className="card mt-4">
+        <div className="card-body">
+          <h5 className="card-title">Upcoming Deadlines</h5>
+          {upcomingDeadlines.length > 0 ? (
+            <ul className="list-group">
+              {upcomingDeadlines.map((task) => (
+                <li key={task.id} className="list-group-item">
+                  <strong>{task.title}</strong> - Due: {new Date(task.deadline).toLocaleDateString()}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No upcoming deadlines.</p>
+          )}
+        </div>
       </div>
 
-      {/* Recent Activity */}
-      {/* <ActivityFeed /> */}
     </div>
   );
 };

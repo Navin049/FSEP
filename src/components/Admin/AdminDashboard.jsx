@@ -18,7 +18,7 @@ const AdminDashboard = () => {
         if (response.ok) {
           const data = await response.json();
           setUserCounts({
-            "Project Manager": data["Project Manager"] || 0,
+            "Project manager": data["Project manager"] || 0,
             "Team Member": data["Team Member"] || 0,
           });
           setProjectsCount(data.projects || 0);
@@ -36,10 +36,10 @@ const AdminDashboard = () => {
 
   // Data for the "User Types" Pie Chart
   const userTypeData = {
-    labels: ["Project Manager", "Team Member"],
+    labels: ["Project manager", "Team Member"],
     datasets: [
       {
-        data: [userCounts["Project Manager"], userCounts["Team Member"]], 
+        data: [userCounts["Project manager"], userCounts["Team Member"]], 
         backgroundColor: ["#007bff", "#ffc107"],
         hoverBackgroundColor: ["#0056b3", "#e0a800"],
       },

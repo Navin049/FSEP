@@ -55,8 +55,6 @@ function TeamMember_Dashboard() {
           const taskData = await response.json();
           
           // setTasks(taskData);
-
-
           setTaskStats({
             totalTasks: taskData.totalTasks || 0,
             completedTasks: taskData.completedTasks || 0,
@@ -93,7 +91,7 @@ function TeamMember_Dashboard() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-4" style={{width:"150%",margin:"auto"}}>
       <h2>Welcome, {teamMember.name} 👋</h2>
       <p className="text-muted">Sub-Role: {teamMember.Subrole}</p>
 
