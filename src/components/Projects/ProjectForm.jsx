@@ -6,10 +6,11 @@ const ProjectForm = ({ onSubmit, project }) => {
   const [startdate, setstartdate] = useState(project ? project.startdate : "");
   const [enddate, setenddate] = useState(project ? project.enddate : "");
   const [budget, setbudget] = useState(project ? project.budget : "");
+  const [status, setStatus] = useState(project ? project.status : "to Do");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newProject = { name, description, startdate, enddate, budget };
+    const newProject = { name, description, startdate, enddate, budget, status };
 
     try {
       const response = await fetch("http://localhost:8080/backend-servlet/CreateProjectServlet", {
@@ -18,21 +19,20 @@ const ProjectForm = ({ onSubmit, project }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newProject),
-        credentials:"include",
+        credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Notify the parent about the new project if needed
         if (onSubmit) {
-          onSubmit(data); // You can return the response data, including the new project ID
+          onSubmit(data);
         }
-        // Optionally, clear form fields
         setName("");
         setDescription("");
         setstartdate("");
         setenddate("");
         setbudget("");
+        setStatus("Planned");
       } else {
         alert("Error creating project.");
       }
@@ -44,27 +44,27 @@ const ProjectForm = ({ onSubmit, project }) => {
 
   return (
     <div
-    className="w-100 d-flex justify-content-center align-items-center"
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      minHeight: "100vh",
-      margin:"auto"
-    }}
-  >
+      className="w-100 d-flex justify-content-center align-items-center"
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        minHeight: "100vh",
+        margin: "auto"
+      }}
+    >
       <div className="card p-4 shadow-lg w-100" style={{ maxWidth: "400px" }}>
         <form onSubmit={handleSubmit}>
           <h2 className="text-center mb-4">{project ? "Edit Project" : "Create New Project"}</h2>
-          
+
           <div className="mb-3">
             <label className="form-label w-100">
               Project Name:
               <input className="form-control" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
           </div>
-          
+
           <div className="mb-3">
             <label className="form-label w-100">
               Description:
@@ -90,6 +90,17 @@ const ProjectForm = ({ onSubmit, project }) => {
             <label className="form-label w-100">
               Budget:
               <input className="form-control" type="number" value={budget} onChange={(e) => setbudget(e.target.value)} required />
+            </label>
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label w-100">
+              Status:
+              <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)} required>
+                <option value="to Do">to Do</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
             </label>
           </div>
 

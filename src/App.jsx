@@ -16,7 +16,7 @@ import Sidebar from "./components/Shared/Sidebar";
 import Team_Member_Sidebar from "./components/Shared/Team_Member_Sidebar";
 import TeamMembers from "./components/Team/TeamMembers";
 import Login from "./components/Auth/Login";
-import Register from "./components/Auth/Register";
+
 import Home from "./components/Shared/Home";
 import Logout from "./components/Auth/Logout";
 import Profile from "./components/Dashboard/Profile";
@@ -26,6 +26,7 @@ import UserManagement from "./components/Admin/UserManagement";
 import ProjectManagement from "./components/Admin/ProjectManagement";
 import TaskManagement from "./components/Admin/TaskManagement";
 import AdminSidebar from "./components/Shared/AdminSidebar";
+import CreateEventForm from "./components/Events/CreateEventForm";
 
 // Main App Component
 function App() {
@@ -100,13 +101,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/ServletRegister" element={<ServletRegister />} />
           <Route path="/logout" element={<Logout />} />
-          <Route path="/TeamMember_Dashboard" element={<TeamMember_Dashboard />} />
+          <Route path="/TeamMember_Dashboard" element={<TeamMember_Dashboard projectId={projectId}/>} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/admin-users" element={<UserManagement />} />
           <Route path="/admin-sidebar" element={<AdminSidebar />} />
           <Route path="/admin-projects" element={<ProjectManagement />} />
           <Route path="/admin-tasks" element={<TaskManagement projectId={projectId} />} />
+          <Route path="/CreateEventForm" element={<CreateEventForm />} />
           <Route path="*" element={<AdminLogin />} /> {/* Default Route */}
         </Routes>
       </Layout>
@@ -136,10 +138,10 @@ const Layout = ({ children, projectId }) => {
         userRole === "Team Member" ? (
           <Team_Member_Sidebar />
         ) : userRole === "Project Manager" ? (
-          <Sidebar />
-        ) : userRole === "Admin" ? (
-          <AdminSidebar />
-        ) : null
+          <Sidebar /> ) 
+          // : userRole === "Admin" ? (
+          // <AdminSidebar />  ) 
+          : null
       )}
       <div className="main-content">{children}</div>
     </div>

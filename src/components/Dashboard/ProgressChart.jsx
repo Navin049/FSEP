@@ -19,7 +19,7 @@ const ProgressChart = ({ completed, inProgress, pending }) => {
   return (
     <div className="card p-3">
       <h2>Project Progress</h2>
-      <div className="chart-container" style={{ width: "300px", margin: "auto" }}>
+      <div className="chart-container" style={{ width: "250px", margin: "auto" }}>
         <Doughnut data={data} />
       </div>
     </div>

@@ -10,10 +10,13 @@ body {
   /* width:200%; */
 }
 
+div#root{
+  width: 100%;
+}
 
 .main-content {
   flex-grow: 1;
-  padding: 20px;
+  /* padding: 20px; */
   /* margin-left: 250px; */
 }
 
@@ -86,3 +89,22 @@ body {
 }
 
 
+.event-day {
+  position: relative;
+  cursor: pointer;
+}
+
+.event-indicator {
+  /* position: absolute; */
+  bottom: 5px;
+  left: 5px;
+  font-size: 0.8em;
+  color: #fff;
+  background-color: #007bff;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.event-title {
+  font-size: 0.8em;
+}

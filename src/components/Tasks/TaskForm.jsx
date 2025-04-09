@@ -32,7 +32,7 @@ const TaskForm = ({ onSubmit, task }) => {
   const fetchTeamMembers = async (projectId) => {
     console.log("Fetching team members for project ID:", projectId); // Log the project ID being sent to the backend
     try {
-      const response = await fetch("http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet", {
+      const response = await fetch("http://localhost:8080/backend-servlet/TeamMemberINProject", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,8 +45,8 @@ const TaskForm = ({ onSubmit, task }) => {
         const teamMembersData = await response.json();
         console.log("Team members data:", teamMembersData); // Log the team members data from the response
   
-        // Set the team members based on the response
-        setTeamMembers(teamMembersData);  // Assuming the response is an array directly
+        // Set the team members from the 'members' array in the response
+        setTeamMembers(teamMembersData.members || []); // Safely access 'members' array
       } else {
         console.error("Error fetching team members:", response.statusText);
         setTeamMembers([]); // Reset team members on error
@@ -56,6 +56,7 @@ const TaskForm = ({ onSubmit, task }) => {
       setTeamMembers([]); // Reset team members on error
     }
   };
+  
   
 
   const handleProjectChange = (e) => {
@@ -116,7 +117,7 @@ const TaskForm = ({ onSubmit, task }) => {
 
   return (
     <div className="container d-flex justify-content-center align-items-center min-vh-100 m-3">
-      <div className="card p-4 shadow-lg w-100">
+      <div className="card p-4 shadow-lg ">
         <form onSubmit={handleSubmit}>
           <h2 className="text-center mb-4">{task ? "Edit Task" : "Add New Task"}</h2>
 
