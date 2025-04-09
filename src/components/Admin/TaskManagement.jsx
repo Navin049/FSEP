@@ -1,425 +1,680 @@
-import React, { useState, useEffect } from "react";
+"use client"
+
+import { useEffect, useState } from "react"
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+} from "chart.js"
+import { Pie, Line } from "react-chartjs-2"
+import AdminSidebar from "../Shared/AdminSidebar"
+import { FaPlus, FaEye, FaPencilAlt, FaTrash, FaFilter, FaSearch } from "react-icons/fa"
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement)
 
 const TaskManagement = () => {
-    const [tasks, setTasks] = useState([]);
-    // const [selectedTask, setSelectedTask] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [editData, setEditData] = useState({
-      id: "",
-      title: "",
-      description: "",
-      status: "",
-      deadline: "",
-      assignedTo: "",
-      priority: "",
-      projectName: "",
-    });
-    const [projects, setProjects] = useState([]);
-    const [teamMembers, setTeamMembers] = useState([]);
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [taskStatus, setTaskStatus] = useState({})
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [filterPriority, setFilterPriority] = useState("all")
 
-  // Fetch tasks and projects when the component mounts
-  useEffect(() => {
-    
-    fetchTasks();
-    fetchProjects();
-    // fetchTeamMembers();  // Fetch team members
-  }, []);
+  // Modal states
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [modalMode, setModalMode] = useState("view") // view, edit, add
+  const [projects, setProjects] = useState([])
+  const [users, setUsers] = useState([])
 
-  // Fetch tasks from the backend
-  const fetchTasks = async () => {
+  // Fetch tasks data
+  const fetchTasksData = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:8080/backend-servlet/TaskManagementServlet",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
+      setLoading(true)
+      const response = await fetch("http://localhost:8080/backend-servlet/TaskManagementServlet", {
+        method: "GET",
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Received tasks data:", data)
+        setTasks(data.tasks || [])
+
+        // Calculate task status counts
+        const statusCounts = {
+          completed: 0,
+          inProgress: 0,
+          toDo: 0,
         }
-      );
 
-      const data = await response.json();
-      setTasks(Array.isArray(data) ? data : []);
+        data.tasks?.forEach((task) => {
+          const status = task.status?.toLowerCase() || ""
+          if (status.includes("complete")) statusCounts.completed++
+          else if (status.includes("progress")) statusCounts.inProgress++
+          else statusCounts.toDo++
+        })
+
+        setTaskStatus(statusCounts)
+
+
+
+        // Extract Monthly Tasks Data
+        const totalTasksData = Array(12).fill(0)
+        const completedTasksData = Array(12).fill(0)
+        if (data.monthlyTasks) {
+          Object.keys(data.monthlyTasks).forEach((month) => {
+            const monthIndex = Number.parseInt(month, 10) - 1
+            if (monthIndex >= 0 && monthIndex < 12) {
+              totalTasksData[monthIndex] = data.monthlyTasks[month]
+            }
+          })
+        }
+        if (data.completedTasks) {
+          Object.keys(data.completedTasks).forEach((month) => {
+            const monthIndex = Number.parseInt(month, 10) - 1
+            if (monthIndex >= 0 && monthIndex < 12) {
+              completedTasksData[monthIndex] = data.completedTasks[month]
+            }
+          })
+        }
+
+        // Update Chart Data
+        updateCharts(totalTasksData, completedTasksData)
+
+
+      } else {
+        console.error("Failed to fetch tasks")
+      }
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("Error fetching tasks:", error)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  // Fetch projects from the backend
+  // Fetch projects for task assignment
   const fetchProjects = async () => {
     try {
-      const projectsRes = await fetch(
-        "http://localhost:8080/backend-servlet/TaskManagementUpdateServlet",
-        {
-          method: 'GET',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (!projectsRes.ok) {  
-        // Handle the case where the admin might not be authorized or other HTTP errors  
-        throw new Error(`Error: ${projectsRes.status}`);  
-    }  
-
-      const projectsData = await projectsRes.json();
-      console.log(projectsData);
-      setProjects(projectsData.projects || []);
+      const response = await fetch("http://localhost:8080/backend-servlet/ProjectManagementServlet", {
+        method: "GET",
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProjects(data.projects || [])
+      } else {
+        console.error("Failed to fetch projects")
+      }
     } catch (error) {
-      console.error("Error fetching projects:", error);
+      console.error("Error fetching projects:", error)
     }
-  };
+  }
 
-  // Fetch team members from the backend
-  const fetchTeamMembers = async (projectId) => {
-    if (!projectId) return;
-  
+  // Fetch users for task assignment
+  const fetchUsers = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:8080/backend-servlet/AdminGetAssignedMembersForProjectServlet",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ projectId }),
-          credentials: "include",
-        }
-      );
-  
-      // Check if the response status is OK (200-299)
-      if (!response.ok) {
-        console.error("Failed to fetch team members:", response.statusText);
-        return;
+      const response = await fetch("http://localhost:8080/backend-servlet/UserManagementServlet", {
+        method: "GET",
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data)
+      } else {
+        console.error("Failed to fetch users")
       }
-  
-      // Try parsing the response as JSON
-      const teamMembersData = await response.json();
-      console.log("Fetched team members:", teamMembersData);  
-
-      // Check if the response contains a message (error or no members)
-      if (teamMembersData.message) {
-        console.error("Server message:", teamMembersData.message);
-        return;
-      }
-  
-      // If data is valid, set the team members
-      setTeamMembers(teamMembersData);
-     
-  
     } catch (error) {
-      // Catch any other errors (network, parsing, etc.)
-      console.error("Error fetching team members:", error);
+      console.error("Error fetching users:", error)
     }
-  };
-  
+  }
 
-  const handleEditClick = (task) => {
-    // setSelectedTask(task);
-    setEditData({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      deadline: task.deadline,
-      assignedTo: task.assignedTo,
-      priority: task.priority,
-      projectName: task.projectName,
-    });
-    // fetchProjects();
-    setShowModal(true);
-  };
+  useEffect(() => {
+    fetchTasksData()
+    fetchProjects()
+    fetchUsers()
+  }, [])
 
-  const handleProjectChange = (e) => {
-    const selectedProjectName = e.target.value;
-    setEditData({ ...editData, projectName: selectedProjectName });
+  // Data for the "Task Status" Pie Chart
+  const taskStatusData = {
+    labels: ["Completed", "In Progress", "To Do"],
+    datasets: [
+      {
+        data: [taskStatus?.completed || 0, taskStatus?.inProgress || 0, taskStatus?.toDo || 0],
+        backgroundColor: ["#1cc88a", "#f6c23e", "#e74a3b"],
+        hoverBackgroundColor: ["#17a673", "#dda20a", "#be2617"],
+        borderWidth: 1,
+      },
+    ],
+  }
 
-    // Find the project ID corresponding to the selected project name
-    const selectedProject = projects.find(
-      (project) => project.name === selectedProjectName
-    );
+  const [monthlyTasksData, setMonthlyTasksData] = useState({
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    datasets: [
+      {
+        label: "Tasks Created",
+        data: new Array(12).fill(0),
+        fill: false,
+        borderColor: "#1cc88a",
+        tension: 0.1,
+      },
+      {
+        label: "Tasks Completed",
+        data: new Array(12).fill(0),
+        fill: false,
+        borderColor: "#f6c23e",
+        tension: 0.1,
+      },
+    ],
+  })
 
-    if (selectedProject) {
-      // Fetch team members for the selected project
-      fetchTeamMembers(selectedProject.projectId);
-    }
-  };
+  // Function to update task completion trend
+  function updateCharts(totalTasksData, completedTasksData) {
+    setMonthlyTasksData((prev) => ({
+      ...prev,
+      datasets: [
+        { ...prev.datasets[0], data: totalTasksData },
+        { ...prev.datasets[1], data: completedTasksData },
+      ],
+    }))
+  }
 
-  // Handle the delete action
-  const handleDeleteClick = (taskId) => {
-    handleDelete(taskId);
-  };
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        display: true,
+      },
+    },
+  }
 
-  // Perform deletion of task
-  const handleDelete = async (id) => {
-    const isConfirmed = window.confirm(
-      "Are you sure you want to delete this task?"
-    );
-    if (isConfirmed) {
-      try {
-        const response = await fetch(
-          `http://localhost:8080/backend-servlet/DeleteTaskServlet`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ id }),
-          }
-        );
+  // Handle task actions
+  const handleViewTask = (task) => {
+    setSelectedTask(task)
+    setModalMode("view")
+    setShowTaskModal(true)
+  }
 
-        if (response.ok) {
-          fetchTasks();
-        } else {
-          console.error("Error deleting task:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error deleting task:", error);
-      }
-    }
-  };
+  const handleEditTask = (task) => {
+    setSelectedTask(task)
+    setModalMode("edit")
+    setShowTaskModal(true)
+  }
 
-  // Handle change in modal form inputs
-  const handleSaveChanges = async () => {
-    if (!editData.id) {
-      console.error("Task ID is missing");
-      return;
-    }
+  const handleAddTask = () => {
+    setSelectedTask({
+      title: "",
+      description: "",
+      status: "To Do",
+      priority: "Medium",
+      deadline: "",
+      projectId: "",
+      assignedTo: "",
+    })
+    setModalMode("add")
+    setShowTaskModal(true)
+  }
 
+  const handleSaveTask = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/UpdateTaskServlet`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(editData),
-        }
-      );
+      const url =
+        modalMode === "add"
+          ? "http://localhost:8080/backend-servlet/AddTaskServlet"
+          : "http://localhost:8080/backend-servlet/UpdateTaskServlet"
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(selectedTask),
+        credentials: "include",
+      })
 
       if (response.ok) {
-        fetchTasks();
-        setShowModal(false);
+        setShowTaskModal(false)
+        fetchTasksData() // Refresh the tasks list
       } else {
-        console.error("Error updating task:", response.statusText);
+        console.error("Failed to save task:", response.statusText)
       }
     } catch (error) {
-      console.error("Error saving task changes:", error);
+      console.error("Error saving task:", error)
     }
-  };
+  }
+
+  const handleDeleteTask = async (taskId) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      try {
+        const response = await fetch("http://localhost:8080/backend-servlet/DeleteTaskServlet", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ taskId }),
+          credentials: "include",
+        })
+
+        if (response.ok) {
+          fetchTasksData() // Refresh the tasks list
+        } else {
+          console.error("Failed to delete task:", response.statusText)
+        }
+      } catch (error) {
+        console.error("Error deleting task:", error)
+      }
+    }
+  }
+
+  // Helper functions for UI
+  function getStatusBadge(status) {
+    const lowerStatus = status?.toLowerCase() // convert once
+
+    switch (lowerStatus) {
+      case "in progress":
+        return <span className="badge bg-warning text-dark">In Progress</span>
+      case "completed":
+        return <span className="badge bg-success">Completed</span>
+      case "to do":
+        return <span className="badge bg-secondary">To Do</span>
+      default:
+        return <span className="badge bg-light text-dark">{status}</span>
+    }
+  }
+
+  function getPriorityBadge(priority) {
+    const lowerPriority = priority?.toLowerCase() // convert once
+
+    switch (lowerPriority) {
+      case "high":
+        return <span className="badge bg-danger">High</span>
+      case "medium":
+        return <span className="badge bg-warning text-dark">Medium</span>
+      case "low":
+        return <span className="badge bg-info text-dark">Low</span>
+      default:
+        return <span className="badge bg-light text-dark">{priority}</span>
+    }
+  }
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed)
+  }
+
+  // Filter tasks based on search term, status and priority
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "completed" && task.status?.toLowerCase().includes("complete")) ||
+      (filterStatus === "inProgress" && task.status?.toLowerCase().includes("progress")) ||
+      (filterStatus === "toDo" &&
+        !task.status?.toLowerCase().includes("complete") &&
+        !task.status?.toLowerCase().includes("progress"))
+    const matchesPriority = filterPriority === "all" || task.priority?.toLowerCase() === filterPriority.toLowerCase()
+
+    return matchesSearch && matchesStatus && matchesPriority
+  })
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-blue-600 mb-4">Manage Tasks</h2>
-      <div className="overflow-x-auto table-responsive-sm">
-        <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-3 border">ID</th>
-              <th className="p-3 border">Title</th>
-              <th className="p-3 border">Description</th>
-              <th className="p-3 border">Project Name</th>
-              <th className="p-3 border">Deadline</th>
-              <th className="p-3 border">Status</th>
-              <th className="p-3 border">Assigned To</th>
-              <th className="p-3 border">Priority</th>
-              <th className="p-3 border">Created At</th>
-              <th className="p-3 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks.length > 0 ? (
-              tasks.map((task) => (
-                <tr key={task.id} className="border-t">
-                  <td className="p-3 border">{task.id}</td>
-                  <td className="p-3 border">{task.title}</td>
-                  <td className="p-3 border">{task.description}</td>
-                  <td className="p-3 border">{task.projectName}</td>
-                  <td className="p-3 border">{task.deadline}</td>
-                  <td className="p-3 border">{task.status}</td>
-                  <td className="p-3 border">{task.assignedTo}</td>
-                  <td className="p-3 border">{task.priority}</td>
-                  <td className="p-3 border">{task.createdAt}</td>
-                  <td className="p-3 border">
-                    <button className="btn btn-primary" onClick={() => handleEditClick(task)}>Edit</button>
-                    <button className="btn btn-danger m-1" onClick={() => handleDeleteClick(task.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="10" className="text-center p-4 text-gray-500">
-                  No tasks available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+    <div className="admin-layout">
+      <AdminSidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
+
+      <div className={`main-content ${sidebarCollapsed ? "expanded" : ""}`}>
+        <div className="dashboard-header">
+          <div>
+            <h2 className="mb-1">Task Management</h2>
+            <p className="text-muted">Manage all your tasks in one place</p>
+          </div>
+          <button className="btn btn-primary" onClick={handleAddTask}>
+            <FaPlus className="me-2" />
+            Add New Task
+          </button>
+        </div>
+
+        <div className="row mb-4">
+          <div className="col-md-8">
+            <div className="input-group">
+              <span className="input-group-text">
+                <FaSearch />
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <select
+                className="form-select"
+                style={{ maxWidth: "150px" }}
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="toDo">To Do</option>
+                <option value="inProgress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+              <select
+                className="form-select"
+                style={{ maxWidth: "150px" }}
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <button className="btn btn-outline-secondary">
+                <FaFilter />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="row mb-4">
+          <div className="col-md-6">
+            <div className="card shadow mb-4">
+              <div className="card-header py-3">
+                <h6 className="m-0 font-weight-bold text-primary">Task Status</h6>
+              </div>
+              <div className="card-body">
+                <div style={{ height: "300px" }}>
+                  <Pie data={taskStatusData} options={chartOptions} />
+                </div>
+                <div className="mt-4 text-center small">
+                  <span className="me-2">
+                    <i className="bi bi-circle-fill text-success"></i> Completed: {taskStatus.completed}
+                  </span>
+                  <span className="me-2">
+                    <i className="bi bi-circle-fill text-warning"></i> In Progress: {taskStatus.inProgress}
+                  </span>
+                  <span className="me-2">
+                    <i className="bi bi-circle-fill text-danger"></i> To Do: {taskStatus.toDo}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6">
+            <div className="card shadow mb-4">
+              <div className="card-header py-3">
+                <h6 className="m-0 font-weight-bold text-primary">Task Completion Trend</h6>
+              </div>
+              <div className="card-body">
+                <div style={{ height: "300px" }}>
+                  <Line
+                    data={monthlyTasksData}
+                    options={{
+                      ...chartOptions,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card shadow">
+          <div className="card-header py-3">
+            <h6 className="m-0 font-weight-bold text-primary">All Tasks</h6>
+          </div>
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered table-hover">
+                <thead className="table-light">
+                  <tr>
+                    <th>Title</th>
+                    <th>Project</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTasks.length > 0 ? (
+                    filteredTasks.map((task) => (
+                      <tr key={task.id}>
+                        <td>{task.title}</td>
+                        <td>{task.projectName}</td>
+                        <td>{task.assignedTo}</td>
+                        <td>{getStatusBadge(task.status)}</td>
+                        <td>{getPriorityBadge(task.priority)}</td>
+                        <td>{task.deadline}</td>
+                        <td>
+                          <div className="btn-group">
+                            <button className="btn btn-sm btn-light" onClick={() => handleViewTask(task)}>
+                              <FaEye />
+                            </button>
+                            <button className="btn btn-sm btn-light" onClick={() => handleEditTask(task)}>
+                              <FaPencilAlt />
+                            </button>
+                            <button className="btn btn-sm btn-light" onClick={() => handleDeleteTask(task.id)}>
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        No tasks found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Edit Task Modal */}
-      {showModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40"
-            onClick={() => setShowModal(false)}
-          ></div>
-          <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit Task</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowModal(false)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <form>
-                    <div className="mb-3">
-                      <label className="form-label">Task Title</label>
+      {/* Task Modal */}
+      {showTaskModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  {modalMode === "view" ? "Task Details" : modalMode === "edit" ? "Edit Task" : "Add New Task"}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => setShowTaskModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <form>
+                  <div className="row mb-3">
+                    <div className="col-md-8">
+                      <label className="form-label">Title</label>
                       <input
                         type="text"
                         className="form-control"
-                        value={editData.title}
-                        onChange={(e) =>
-                          setEditData({ ...editData, title: e.target.value })
-                        }
-                        
+                        value={selectedTask?.title || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                        readOnly={modalMode === "view"}
                       />
                     </div>
-                    <div className="mb-3">
-                      <label className="form-label">Description</label>
-                      <textarea
-                        className="form-control"
-                        value={editData.description}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            description: e.target.value,
-                          })
-                        }
-                        
-                      />
-                    </div>
-                    <div className="mb-3">
+                    <div className="col-md-4">
                       <label className="form-label">Status</label>
                       <select
-                        type="text"
-                        className="form-control"
-                        value={editData.status}
-                        onChange={(e) =>
-                          setEditData({ ...editData, status: e.target.value })
-                        }
-                        
+                        className="form-select"
+                        value={selectedTask?.status || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, status: e.target.value })}
+                        disabled={modalMode === "view"}
                       >
                         <option value="To Do">To Do</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                       </select>
                     </div>
-                    <div className="mb-3">
-                      <label className="form-label">Deadline</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={editData.deadline}
-                        onChange={(e) =>
-                          setEditData({ ...editData, deadline: e.target.value })
-                        }
-                        
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Assigned To</label>
-                      <select
-                        type="text"
-                        className="form-control"
-                        value={editData.assignedTo}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            assignedTo: e.target.value,
-                          })
-                        }
-                        
-                      >
-                        <option value="">Select a team member</option>
-                        {teamMembers.map((member) => (
-                          <option key={member.id} value={member.name}>
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mb-3">
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      value={selectedTask?.description || ""}
+                      onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
+                      readOnly={modalMode === "view"}
+                    ></textarea>
+                  </div>
+                  <div className="row mb-3">
+                    <div className="col-md-4">
                       <label className="form-label">Priority</label>
                       <select
-                        type="text"
-                        className="form-control"
-                        value={editData.priority}
-                        onChange={(e) =>
-                          setEditData({ ...editData, priority: e.target.value })
-                        }
-                        
+                        className="form-select"
+                        value={selectedTask?.priority || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, priority: e.target.value })}
+                        disabled={modalMode === "view"}
                       >
                         <option value="Low">Low</option>
                         <option value="Medium">Medium</option>
                         <option value="High">High</option>
                       </select>
                     </div>
-                    <div className="mb-3">
-                      <label className="form-label">Project Name</label>
-                      <select
+                    <div className="col-md-4">
+                      <label className="form-label">Deadline</label>
+                      <input
+                        type="date"
                         className="form-control"
-                        value={editData.projectName}
-                        onChange={handleProjectChange} // Call the function to update the project and fetch team members
-                        
+                        value={selectedTask?.deadline || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, deadline: e.target.value })}
+                        readOnly={modalMode === "view"}
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Project</label>
+                      <select
+                        className="form-select"
+                        value={selectedTask?.projectId || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, projectId: e.target.value })}
+                        disabled={modalMode === "view"}
                       >
-                        <option value="">Select a project</option>
+                        <option value="">Select Project</option>
                         {projects.map((project) => (
-                          <option key={project.projectId} value={project.name}>
-                            {project.name}
+                          <option key={project.projectId} value={project.projectId}>
+                            {project.projectName}
                           </option>
                         ))}
                       </select>
                     </div>
-                  </form>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancel
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Assigned To</label>
+                    <select
+                      className="form-select"
+                      value={selectedTask?.assignedTo || ""}
+                      onChange={(e) => setSelectedTask({ ...selectedTask, assignedTo: e.target.value })}
+                      disabled={modalMode === "view"}
+                    >
+                      <option value="">Select User</option>
+                      {users.map((user) => (
+                        <option key={user.id || user.email} value={user.name}>
+                          {user.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowTaskModal(false)}>
+                  {modalMode === "view" ? "Close" : "Cancel"}
+                </button>
+                {modalMode !== "view" && (
+                  <button type="button" className="btn btn-primary" onClick={handleSaveTask}>
+                    {modalMode === "add" ? "Add Task" : "Save Changes"}
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn-success"
-                    onClick={handleSaveChanges}
-                    disabled={
-                      !editData.title ||
-                      !editData.description ||
-                      !editData.status ||
-                      !editData.deadline
-                    }
-                  >
-                    Save Changes
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
-    </div>
-  );
-};
 
-export default TaskManagement;
+      <style jsx>{`
+        .admin-layout {
+          display: flex;
+          min-height: 100vh;
+        }
+
+        .main-content {
+          flex: 1;
+           margin-left: 150px;
+          padding: 20px;
+          transition: all 0.3s ease;
+          background-color: #f8f9fc;
+        }
+
+        .main-content.expanded {
+          margin-left: 70px;
+        }
+
+        .dashboard-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid #e3e6f0;
+        }
+
+        .card {
+          border: none;
+          border-radius: 0.35rem;
+          box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .card-header {
+          background-color: #f8f9fc;
+          border-bottom: 1px solid #e3e6f0;
+        }
+
+        .font-weight-bold {
+          font-weight: 700 !important;
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            margin-left: 70px;
+          }
+          
+          .main-content.expanded {
+            margin-left: 0;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+export default TaskManagement
