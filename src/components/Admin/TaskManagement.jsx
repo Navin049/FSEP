@@ -217,7 +217,8 @@ const TaskManagement = () => {
       status: "To Do",
       priority: "Medium",
       deadline: "",
-      projectId: "",
+      // projectId: "",
+      projectName:"",
       assignedTo: "",
     })
     setModalMode("add")
@@ -225,10 +226,11 @@ const TaskManagement = () => {
   }
 
   const handleSaveTask = async () => {
+    console.log("sending tasks data", selectedTask);
     try {
       const url =
         modalMode === "add"
-          ? "http://localhost:8080/backend-servlet/AddTaskServlet"
+          ? "http://localhost:8080/backend-servlet/AdminCreateTaskServlet"
           : "http://localhost:8080/backend-servlet/UpdateTaskServlet"
 
       const response = await fetch(url, {
@@ -237,7 +239,7 @@ const TaskManagement = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(selectedTask),
-        credentials: "include",
+        // credentials: "include",
       })
 
       if (response.ok) {
@@ -259,8 +261,8 @@ const TaskManagement = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ taskId }),
-          credentials: "include",
+          body: JSON.stringify({ id: taskId }),
+          // credentials: "include",
         })
 
         if (response.ok) {
@@ -575,13 +577,13 @@ const TaskManagement = () => {
                       <label className="form-label">Project</label>
                       <select
                         className="form-select"
-                        value={selectedTask?.projectId || ""}
-                        onChange={(e) => setSelectedTask({ ...selectedTask, projectId: e.target.value })}
+                        value={selectedTask?.projectName || ""}
+                        onChange={(e) => setSelectedTask({ ...selectedTask, projectName: e.target.value })}
                         disabled={modalMode === "view"}
                       >
                         <option value="">Select Project</option>
                         {projects.map((project) => (
-                          <option key={project.projectId} value={project.projectId}>
+                          <option key={project.projectName} value={project.projectName}>
                             {project.projectName}
                           </option>
                         ))}

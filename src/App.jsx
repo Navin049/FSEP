@@ -120,32 +120,32 @@ function App() {
 const Layout = ({ children, projectId }) => {
   const location = useLocation();
   const [userRole, setUserRole] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    // Get logged-in user on every route change
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (loggedInUser) {
-      setUserRole(loggedInUser.role); // Update role on route change
+      setUserRole(loggedInUser.role);
     }
   }, [location.pathname]);
 
-  // Hide sidebar on specific pages
-  const hideSidebar = ["/", "/login", "/Register", "/ServletRegister", "/AdminLogin"].includes(location.pathname);
+  const hideSidebar = ["/", "/login", "/servletregister", "/adminlogin"].includes(location.pathname.toLowerCase());
 
-  return (
+  return hideSidebar ? (
+    <>{children}</>
+  ) : (
     <div className="container-layout">
-      {!hideSidebar && (
-        userRole === "Team Member" ? (
-          <Team_Member_Sidebar />
-        ) : userRole === "Project Manager" ? (
-          <Sidebar /> ) 
-          // : userRole === "Admin" ? (
-          // <AdminSidebar />  ) 
-          : null
-      )}
-      <div className="main-content">{children}</div>
+      {userRole === "Team Member" ? (
+        <Team_Member_Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      ) : userRole === "Project Manager" ? (
+        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />  )
+      // :  userRole === "Admin" ? (
+      //   <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} />)
+      : null}
+      <div className={`main-content ${collapsed ? 'collapsed' : ''}`}>{children}</div>
     </div>
   );
 };
+
 
 export default App;

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap-icons/font/bootstrap-icons.css"
+import ActivityFeed from "../Dashboard/ActivityFeed" 
 
 const Profile = () => {
   const [user, setUser] = useState(null)
@@ -151,7 +152,7 @@ const Profile = () => {
                 </button>
               </div>
             </div>
-            <div className="card-footer bg-light">
+            {/* <div className="card-footer bg-light">
               <div className="d-flex justify-content-around">
                 <a href="#" className="text-decoration-none text-muted">
                   <i className="bi bi-envelope-fill"></i>
@@ -163,7 +164,7 @@ const Profile = () => {
                   <i className="bi bi-github"></i>
                 </a>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="card border-0 shadow mt-4">
@@ -302,6 +303,9 @@ const Profile = () => {
             </div>
           </div>
 
+          <ActivityFeed />
+
+
           {/* <div className="card border-0 shadow">
             <div className="card-body">
               <h5 className="card-title">Recent Activity</h5>
@@ -355,7 +359,7 @@ const Profile = () => {
                       {/* Profile Picture Upload */}
                       <div className="text-center">
                         <img
-                          src={editUser.profilePic || "https://via.placeholder.com/150"}
+                          src={editUser.profilePic}
                           alt="Preview"
                           className="rounded-circle img-thumbnail mb-3"
                           style={{ width: "150px", height: "150px", objectFit: "cover" }}

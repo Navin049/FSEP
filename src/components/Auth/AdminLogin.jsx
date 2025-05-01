@@ -172,7 +172,7 @@ const AdminLogin = () => {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-between align-items-center mb-4">
+                  {/* <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="form-check">
                       <input className="form-check-input" type="checkbox" id="rememberMe" />
                       <label className="form-check-label" htmlFor="rememberMe">
@@ -182,7 +182,7 @@ const AdminLogin = () => {
                     <a href="#" className="text-decoration-none">
                       Forgot password?
                     </a>
-                  </div>
+                  </div> */}
 
                   <button type="submit" className="btn btn-primary w-100 py-2 mb-4" disabled={isLoading}>
                     {isLoading ? (

@@ -1,12 +1,9 @@
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import ProgressChart from "./ProgressChart";
 import { useNavigate } from "react-router-dom";
 import "../../App.css";
-import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
-import NotificationBell from "../Dashboard/NotificationBell";
 
 function TeamMember_Dashboard({ projectId }) {
   const [teamMember, setTeamMember] = useState(null);
@@ -24,53 +21,22 @@ function TeamMember_Dashboard({ projectId }) {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentUserId, setCurrentUserId] = useState(null); // Make sure currentUserId is set
   const navigate = useNavigate();
-  const dashboardRef = useRef(null)
 
   const handleViewAllTasksClick = () => {
     // Navigate to the 'View All Tasks' page (assuming the route is '/tasks')
     navigate("/tasks"); // Adjust the path based on your routing configuration
   };
 
-  const fetchUpcomingEvent = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:8080/backend-servlet/GetUpcomingEventsServlet",
-        {
-          method: "GET", // Use GET request to fetch data
-          headers: {
-            "Content-Type": "application/json", // Set content type
-          },
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Error fetching events: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("Upcoming Events:", data);
-
-      setUpcomingEvents(data.upcomingEvents);
-    } catch (error) {
-      // Handle any errors that occurred during the fetch
-      console.error("Error fetching upcoming events:", error);
-    }
-  };
-
-
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const userId = loggedInUser ? loggedInUser.userId : null;
 
-    setCurrentUserId(userId);  
     // Fetch the logged-in user from the backend session
     const fetchTeamMemberData = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8080/backend-servlet/ViewProfileServlet",
+          "http://localhost:8888/backend-servlet/ViewProfileServlet",
           {
             method: "GET",
             headers: {
@@ -102,7 +68,7 @@ function TeamMember_Dashboard({ projectId }) {
       try {
         console.log("Fetching tasks...");
         const response = await fetch(
-          "http://localhost:8080/backend-servlet/ViewTaskServlet",
+          "http://localhost:8888/backend-servlet/ViewTaskServlet",
           {
             method: "GET",
             headers: {
@@ -123,7 +89,7 @@ function TeamMember_Dashboard({ projectId }) {
     const fetchAssignedTasks = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8080/backend-servlet/TeamMemberDashboardServlet",
+          "http://localhost:8888/backend-servlet/TeamMemberDashboardServlet",
           {
             method: "GET",
             headers: {
@@ -157,7 +123,7 @@ function TeamMember_Dashboard({ projectId }) {
         try {
           console.log("Sending projectId:", projectId, "userId:", userId);
           const response = await fetch(
-            "http://localhost:8080/backend-servlet/GetAssignedMembersForProjectServlet",
+            "http://localhost:8888/backend-servlet/GetAssignedMembersForProjectServlet",
             {
               method: "POST",
               headers: {
@@ -184,50 +150,38 @@ function TeamMember_Dashboard({ projectId }) {
       fetchProjectDetails();
     }
 
-   
+    const fetchUpcomingEvent = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8888/backend-servlet/GetUpcomingEventsServlet",
+          {
+            method: "GET", // Use GET request to fetch data
+            headers: {
+              "Content-Type": "application/json", // Set content type
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error fetching events: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Upcoming Events:", data);
+
+        setUpcomingEvents(data.upcomingEvents);
+      } catch (error) {
+        // Handle any errors that occurred during the fetch
+        console.error("Error fetching upcoming events:", error);
+      }
+    };
+
     fetchUpcomingEvent();
     fetchTeamMemberData();
     fetchAssignedTasks();
     fetchTasks();
   }, [projectId]);
-
-  const deleteEvent = async (eventId, creatorId) => {
-    try {
-      console.log("sending deleting data", eventId);
-      const response = await fetch(
-        "http://localhost:8080/backend-servlet/DeleteEventServlet",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          credentials: "include",
-          body: new URLSearchParams({
-            id: eventId,
-            creatorId: creatorId,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          alert("Only the creator of the event can delete it.");
-        } else {
-          throw new Error(`Failed to delete event: ${response.statusText}`);
-        }
-        return;
-      }
-      
-
-      console.log(`Event ${eventId} deleted successfully`);
-
-      // Refresh the upcoming events list
-      fetchUpcomingEvent();
-    } catch (error) {
-      console.error("Error deleting event:", error);
-    }
-  };
-
 
   // Get today's date for the greeting
   const today = new Date();
@@ -281,58 +235,39 @@ function TeamMember_Dashboard({ projectId }) {
     }
   };
 
-    const generatePDF = () => {
-      const input = dashboardRef.current
-  
-      if (!input) {
-        console.error("Dashboard content is missing!")
-        return
-      }
-  
-      html2canvas(input, { scale: 2 }).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png")
-        const pdf = new jsPDF("p", "mm", "a4")
-        const imgWidth = 210
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-  
-        pdf.addImage(imgData, "PNG", 0, 10, imgWidth, imgHeight)
-        pdf.save("Dashboard_Report.pdf")
-      })
-    }
-
   const renderCalendar = (year, month, events) => {
     // Get the first day of the month (e.g., if it's a Sunday or Monday, etc.)
     const firstDayOfMonth = new Date(year, month, 1).getDay();
     // Get the number of days in the month
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+  
     // Prepare an array for the days (in total, the calendar grid will have 42 slots: 6 rows of 7 days each)
     const calendarDays = [];
     let dayCount = 1;
-
+  
     // Add empty slots for the days before the start of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       calendarDays.push(null); // Empty slots
     }
-
+  
     // Add the actual days of the month
     while (dayCount <= daysInMonth) {
       calendarDays.push(dayCount);
       dayCount++;
     }
-
+  
     // Add empty slots for the days after the end of the month (if the month doesn't fit exactly into 6 rows)
     while (calendarDays.length < 42) {
       calendarDays.push(null);
     }
-
+  
     // Generate the calendar table rows and cells
     const rows = [];
     for (let i = 0; i < 6; i++) {
       const row = [];
       for (let j = 0; j < 7; j++) {
         const day = calendarDays[i * 7 + j];
-
+  
         // Filter events for the specific day, month, and year
         const eventOnDay = events.filter((event) => {
           const eventDate = new Date(event.eventDate);
@@ -342,10 +277,10 @@ function TeamMember_Dashboard({ projectId }) {
             eventDate.getFullYear() === year
           );
         });
-
+  
         row.push(
           <td
-            key={`${year}-${month}-${i * 7 + j}`} // use index for uniqueness
+            key={`${year}-${month}-${day}`}
             className={eventOnDay.length > 0 ? "event-day" : ""}
             onClick={() => handleDayClick(day, events)}
           >
@@ -364,10 +299,10 @@ function TeamMember_Dashboard({ projectId }) {
       }
       rows.push(<tr key={i}>{row}</tr>);
     }
-
+  
     return rows;
   };
-
+  
   const changeMonth = (direction) => {
     if (direction === "next") {
       setCurrentMonth((prevMonth) => (prevMonth === 11 ? 0 : prevMonth + 1));
@@ -377,7 +312,7 @@ function TeamMember_Dashboard({ projectId }) {
       if (currentMonth === 0) setCurrentYear(currentYear - 1);
     }
   };
-
+  
   const handleDayClick = (day, events) => {
     const eventDetails = events.filter(
       (event) => new Date(event.eventDate).getDate() === day
@@ -385,6 +320,8 @@ function TeamMember_Dashboard({ projectId }) {
     console.log(eventDetails);
     // Display event details (perhaps in a modal or separate section)
   };
+  
+  
 
   if (loading) {
     return (
@@ -396,12 +333,8 @@ function TeamMember_Dashboard({ projectId }) {
     );
   }
 
-  const EventForm = () => {
-    navigate("/CreateEventForm");
-  };
-
   return (
-    <div className="container-fluid py-4" ref={dashboardRef}>
+    <div className="container-fluid py-4">
       {/* Header Section */}
       <div className="row mb-4">
         <div className="col-12">
@@ -413,7 +346,7 @@ function TeamMember_Dashboard({ projectId }) {
               <p className="text-muted">{formattedDate}</p>
             </div>
             <div className="d-flex">
-              {/* <div className="btn-group me-3">
+              <div className="btn-group me-3">
                 <button
                   className={`btn ${
                     timeframe === "week" ? "btn-primary" : "btn-outline-primary"
@@ -440,12 +373,57 @@ function TeamMember_Dashboard({ projectId }) {
                 >
                   Year
                 </button>
-              </div> */}
-
-              {/* <NotificationBell /> */}
-              <button className="btn btn-success" onClick={generatePDF}>
-                <i className="bi bi-download me-2"></i>Export Report
-              </button>
+              </div>
+              <div className="dropdown">
+                <button
+                  className="btn btn-light position-relative"
+                  type="button"
+                  id="notificationsDropdown"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i className="bi bi-bell"></i>
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {/* {notifications.filter((n) => !n.read).length} */}
+                  </span>
+                </button>
+                <ul
+                  className="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="notificationsDropdown"
+                  style={{ minWidth: "300px" }}
+                >
+                  <li>
+                    <h6 className="dropdown-header">Notifications</h6>
+                  </li>
+                  {/* {notifications.map((notification) => (
+                    <li key={notification.id}>
+                      <a className={`dropdown-item ${!notification.read ? "bg-light" : ""}`} href="#">
+                        <div className="d-flex align-items-center">
+                          <div
+                            className={`bg-${notification.type === "task" ? "primary" : notification.type === "meeting" ? "success" : notification.type === "reminder" ? "warning" : "info"} bg-opacity-10 p-2 rounded me-3`}
+                          >
+                            <i
+                              className={`bi bi-${notification.type === "task" ? "clipboard-check" : notification.type === "meeting" ? "calendar-event" : notification.type === "reminder" ? "alarm" : "chat-dots"} text-${notification.type === "task" ? "primary" : notification.type === "meeting" ? "success" : notification.type === "reminder" ? "warning" : "info"}`}
+                            ></i>
+                          </div>
+                          <div>
+                            <p className="mb-0 small">{notification.message}</p>
+                            <small className="text-muted">{notification.time}</small>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                  ))} */}
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+                  <li>
+                    <a className="dropdown-item text-center" href="#">
+                      View all notifications
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -692,10 +670,7 @@ function TeamMember_Dashboard({ projectId }) {
               <div className="card border-0 shadow">
                 <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                   <h6 className="m-0 font-weight-bold">Upcoming Events</h6>
-                  <button
-                    onClick={() => setActiveTab("calendar")}
-                    className="btn btn-sm btn-outline-primary"
-                  >
+                  <button   onClick={() => setActiveTab("calendar")} className="btn btn-sm btn-outline-primary">
                     View Calendar
                   </button>
                 </div>
@@ -735,9 +710,7 @@ function TeamMember_Dashboard({ projectId }) {
                             </div>
                             <div>
                               <h6 className="mb-0">{event.title}</h6>
-                              <small className="text-muted">
-                                {event.eventDate}
-                              </small>
+                              <small className="text-muted">{event.eventDate}</small>
                             </div>
                           </div>
                         </div>
@@ -848,9 +821,9 @@ function TeamMember_Dashboard({ projectId }) {
                               </div>
                               <h6 className="mb-0">{project.projectName}</h6>
                             </div>
-                            {/* <button className="btn btn-sm btn-light">
+                            <button className="btn btn-sm btn-light">
                               <i className="bi bi-arrow-right"></i>
-                            </button> */}
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -884,13 +857,10 @@ function TeamMember_Dashboard({ projectId }) {
               <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 className="m-0 font-weight-bold">My Calendar</h6>
                 <div>
-                  {/* <button className="btn btn-sm btn-outline-secondary me-2">
+                  <button className="btn btn-sm btn-outline-secondary me-2">
                     <i className="bi bi-filter me-1"></i>Filter
-                  </button> */}
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={EventForm}
-                  >
+                  </button>
+                  <button className="btn btn-sm btn-primary">
                     <i className="bi bi-plus-lg me-1"></i>Add Event
                   </button>
                 </div>
@@ -899,12 +869,12 @@ function TeamMember_Dashboard({ projectId }) {
                 <div className="row mb-4">
                   <div className="col-md-12 text-center">
                     <div className="btn-group">
-                      <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => changeMonth("prev")}
-                      >
-                        <i className="bi bi-chevron-left"></i>
-                      </button>
+                    <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => changeMonth("prev")}
+                  >
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
                       <button className="btn btn-outline-primary" disabled>
                         {`${new Date(currentYear, currentMonth).toLocaleString(
                           "default",
@@ -912,11 +882,11 @@ function TeamMember_Dashboard({ projectId }) {
                         )} ${currentYear}`}
                       </button>
                       <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => changeMonth("next")}
-                      >
-                        <i className="bi bi-chevron-right"></i>
-                      </button>
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => changeMonth("next")}
+                  >
+                    <i className="bi bi-chevron-right"></i>
+                  </button>
                     </div>
                   </div>
                 </div>
@@ -953,21 +923,13 @@ function TeamMember_Dashboard({ projectId }) {
                         key={event.id}
                         className="list-group-item border-0 border-start border-4 border-primary rounded-0 mb-2 shadow-sm"
                       >
-                        <div className="d-flex w-100 justify-content-between align-items-center">
-                          <div>
-                            <h6 className="mb-1">{event.title}</h6>
-                            <p className="mb-1 small text-muted">
-                              {event.description}
-                            </p>
-                            <small>{event.eventDate}</small>
-                          </div>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => deleteEvent(event.id, currentUserId)}
-                          >
-                            <i className="bi bi-trash"></i> Delete
-                          </button>
+                        <div className="d-flex w-100 justify-content-between">
+                          <h6 className="mb-1">{event.title}</h6>
+                          <small>{event.eventDate}</small>
                         </div>
+                        <p className="mb-1 small text-muted">
+                        {event.description}
+                        </p>
                       </div>
                     ))}
                   </div>

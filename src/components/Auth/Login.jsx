@@ -106,6 +106,17 @@ const Login = () => {
                   <p className="text-muted">Sign in to continue to your dashboard</p>
                 </div>
 
+                {message && (
+                  <div
+                    className={`alert ${message.includes("successful") ? "alert-success" : "alert-danger"} mt-4 d-flex align-items-center`}
+                  >
+                    <i
+                      className={`bi ${message.includes("successful") ? "bi-check-circle" : "bi-exclamation-triangle"} me-2`}
+                    ></i>
+                    {message}
+                  </div>
+                )}
+
                 <form onSubmit={handleLogin}>
                   <div className="mb-4">
                     <div className="form-floating input-group">
@@ -164,7 +175,7 @@ const Login = () => {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-between align-items-center mb-4">
+                  {/* <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="form-check">
                       <input className="form-check-input" type="checkbox" id="rememberMe" />
                       <label className="form-check-label" htmlFor="rememberMe">
@@ -174,7 +185,7 @@ const Login = () => {
                     <Link to="/forgot-password" className="text-decoration-none">
                       Forgot password?
                     </Link>
-                  </div>
+                  </div> */}
 
                   <button type="submit" className="btn btn-primary w-100 py-2 mb-4" disabled={isLoading}>
                     {isLoading ? (
@@ -200,16 +211,7 @@ const Login = () => {
                   </div>
                 </form>
 
-                {message && (
-                  <div
-                    className={`alert ${message.includes("successful") ? "alert-success" : "alert-danger"} mt-4 d-flex align-items-center`}
-                  >
-                    <i
-                      className={`bi ${message.includes("successful") ? "bi-check-circle" : "bi-exclamation-triangle"} me-2`}
-                    ></i>
-                    {message}
-                  </div>
-                )}
+ 
               </div>
             </div>
           </div>

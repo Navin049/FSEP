@@ -1,87 +1,128 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useRef } from "react"
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js"
-import { Pie, Bar } from "react-chartjs-2"
-import AdminSidebar from "./../Shared/AdminSidebar"
-import { FaPlus, FaEye, FaPencilAlt, FaTrash, FaFilter, FaSearch } from "react-icons/fa"
+import { useEffect, useState, useRef } from "react";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+} from "chart.js";
+import { Pie, Bar } from "react-chartjs-2";
+import AdminSidebar from "./../Shared/AdminSidebar";
+import {
+  FaPlus,
+  FaEye,
+  FaPencilAlt,
+  FaTrash,
+  FaFilter,
+  FaSearch,
+} from "react-icons/fa";
 
 // Register ChartJS components
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement)
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement
+);
 
 const ProjectManagement = () => {
-  const [projects, setProjects] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [projectStatus, setProjectStatus] = useState({})
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [projectStatus, setProjectStatus] = useState({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   // Modal states
-  const [showProjectModal, setShowProjectModal] = useState(false)
-  const [selectedProject, setSelectedProject] = useState(null)
-  const [modalMode, setModalMode] = useState("view") // view, edit, add
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [modalMode, setModalMode] = useState("view"); // view, edit, add
 
-  const projectChartRef = useRef(null)
+  const projectChartRef = useRef(null);
 
   // Fetch projects data
   const fetchProjectsData = async () => {
     try {
-      setLoading(true)
-      const response = await fetch("http://localhost:8080/backend-servlet/ProjectManagementServlet", {
-        method: "GET",
-        credentials: "include",
-      })
+      setLoading(true);
+      const response = await fetch(
+        "http://localhost:8080/backend-servlet/ProjectManagementServlet",
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
       if (response.ok) {
-        const data = await response.json()
-        console.log("Received projects data:", data)
-        setProjects(data.projects || [])
+        const data = await response.json();
+        console.log("Received projects data:", data);
+        setProjects(data.projects || []);
 
         // Calculate project status counts
         const statusCounts = {
           completed: 0,
           inProgress: 0,
           toDo: 0,
-        }
+        };
 
         data.projects?.forEach((project) => {
-          const status = project.status?.toLowerCase() || ""
-          if (status.includes("complete")) statusCounts.completed++
-          else if (status.includes("progress")) statusCounts.inProgress++
-          else statusCounts.toDo++
-        })
+          const status = project.status?.toLowerCase() || "";
+          if (status.includes("complete")) statusCounts.completed++;
+          else if (status.includes("progress")) statusCounts.inProgress++;
+          else statusCounts.toDo++;
+        });
 
-        setProjectStatus(statusCounts)
+        setProjectStatus(statusCounts);
 
         // Update monthly projects data
-        updateMonthlyProjectsData(data.monthlyProjects)
-
+        updateMonthlyProjectsData(data.monthlyProjects);
       } else {
-        console.error("Failed to fetch projects")
+        console.error("Failed to fetch projects");
       }
     } catch (error) {
-      console.error("Error fetching projects:", error)
+      console.error("Error fetching projects:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Data for the "Projects Status" Pie Chart
   const projectStatusData = {
     labels: ["In Progress", "Completed", "To Do"],
     datasets: [
       {
-        data: [projectStatus?.inProgress || 0, projectStatus?.completed || 0, projectStatus?.toDo || 0],
+        data: [
+          projectStatus?.inProgress || 0,
+          projectStatus?.completed || 0,
+          projectStatus?.toDo || 0,
+        ],
         backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc"],
         hoverBackgroundColor: ["#2e59d9", "#17a673", "#258f99"],
         borderWidth: 1,
       },
     ],
-  }
+  };
 
   // Data for the "Monthly Projects" Bar Chart
   const [monthlyProjectsData, setMonthlyProjectsData] = useState({
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    labels: [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ],
     datasets: [
       {
         label: "Projects Created",
@@ -91,29 +132,28 @@ const ProjectManagement = () => {
         borderWidth: 1,
       },
     ],
-  })
+  });
 
   // Function to update monthly projects data
   const updateMonthlyProjectsData = (monthlyProjectsObj) => {
-    const monthlyData = new Array(12).fill(0)
-  
+    const monthlyData = new Array(12).fill(0);
+
     for (const [month, count] of Object.entries(monthlyProjectsObj)) {
-      const monthIndex = parseInt(month) - 1 // Month is 1-based (1 = Jan)
+      const monthIndex = parseInt(month) - 1; // Month is 1-based (1 = Jan)
       if (monthIndex >= 0 && monthIndex < 12) {
-        monthlyData[monthIndex] = count
+        monthlyData[monthIndex] = count;
       }
     }
-  
+
     setMonthlyProjectsData((prev) => ({
       ...prev,
       datasets: [{ ...prev.datasets[0], data: monthlyData }],
-    }))
-  }
-  
+    }));
+  };
 
   useEffect(() => {
-    fetchProjectsData()
-  }, [])
+    fetchProjectsData();
+  }, []);
 
   // Chart options
   const chartOptions = {
@@ -125,116 +165,140 @@ const ProjectManagement = () => {
         display: true,
       },
     },
-  }
+  };
 
   // Handle project actions
   const handleViewProject = (project) => {
-    setSelectedProject(project)
-    setModalMode("view")
-    setShowProjectModal(true)
-  }
+    setSelectedProject(project);
+    setModalMode("view");
+    setShowProjectModal(true);
+  };
 
   const handleEditProject = (project) => {
-    setSelectedProject(project)
-    setModalMode("edit")
-    setShowProjectModal(true)
-  }
+    setSelectedProject(project);
+    setModalMode("edit");
+    setShowProjectModal(true);
+  };
 
   const handleAddProject = () => {
     setSelectedProject({
       projectName: "",
       manager: "",
       status: "To Do",
+      startDate: "",
       deadline: "",
       description: "",
-    })
-    setModalMode("add")
-    setShowProjectModal(true)
-  }
+    });
+    setModalMode("add");
+    setShowProjectModal(true);
+  };
 
   const handleSaveProject = async () => {
+    const mappedProject = {
+      // id: selectedProject.projectId,
+      projectName: selectedProject.projectName,
+      description: selectedProject.Description,
+      budget: selectedProject.Budget,
+      startdate: selectedProject.Start_Date,
+      deadline: selectedProject.deadline,
+      status: selectedProject.status,
+      managerId: selectedProject.managerId
+    };
+    
+    
+    console.log("Mapped data to send:", mappedProject); // Debug
     try {
       const url =
         modalMode === "add"
-          ? "http://localhost:8080/backend-servlet/AddProjectServlet"
-          : "http://localhost:8080/backend-servlet/UpdateProjectServlet"
-
+          ? "http://localhost:8080/backend-servlet/AdminCreateProjectServlet"
+          : "http://localhost:8080/backend-servlet/UpdateProjectServlet";
+           
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(selectedProject),
+        body: JSON.stringify(mappedProject),
         credentials: "include",
-      })
+      });
 
       if (response.ok) {
-        setShowProjectModal(false)
-        fetchProjectsData() // Refresh the projects list
+        setShowProjectModal(false);
+        fetchProjectsData(); // Refresh the projects list
       } else {
-        console.error("Failed to save project:", response.statusText)
+        console.error("Failed to save project:", response.statusText);
       }
     } catch (error) {
-      console.error('Error saving project:", error)ror("Error saving project:', error)
+      console.error(
+        'Error saving project:", error)ror("Error saving project:',
+        error
+      );
     }
-  }
+  };
 
   const handleDeleteProject = async (projectId) => {
     if (confirm("Are you sure you want to delete this project?")) {
       try {
-        const response = await fetch("http://localhost:8080/backend-servlet/DeleteProjectServlet", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ projectId }),
-          credentials: "include",
-        })
+        const response = await fetch(
+          "http://localhost:8080/backend-servlet/DeleteProjectServlet",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ Project_ID: projectId }),
+            credentials: "include",
+          }
+        );
 
         if (response.ok) {
-          fetchProjectsData() // Refresh the projects list
+          fetchProjectsData(); // Refresh the projects list
         } else {
-          console.error("Failed to delete project:", response.statusText)
+          console.error("Failed to delete project:", response.statusText);
         }
       } catch (error) {
-        console.error("Error deleting project:", error)
+        console.error("Error deleting project:", error);
       }
     }
-  }
+  };
 
   // Helper function for UI
   function getStatusBadge(status) {
-    const lowerStatus = status?.toLowerCase() // convert once
+    const lowerStatus = status?.toLowerCase(); // convert once
 
     switch (lowerStatus) {
       case "in progress":
-        return <span className="badge bg-warning text-dark">In Progress</span>
+        return <span className="badge bg-warning text-dark">In Progress</span>;
       case "completed":
-        return <span className="badge bg-success">Completed</span>
+        return <span className="badge bg-success">Completed</span>;
       case "to do":
-        return <span className="badge bg-secondary">To Do</span>
+        return <span className="badge bg-secondary">To Do</span>;
       default:
-        return <span className="badge bg-light text-dark">{status}</span>
+        return <span className="badge bg-light text-dark">{status}</span>;
     }
   }
 
   const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed)
-  }
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
 
   // Filter projects based on search term and status
   const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = project.projectName
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "all" ||
-      (filterStatus === "completed" && project.status?.toLowerCase().includes("complete")) ||
-      (filterStatus === "inProgress" && project.status?.toLowerCase().includes("progress")) ||
+      (filterStatus === "completed" &&
+        project.status?.toLowerCase().includes("complete")) ||
+      (filterStatus === "inProgress" &&
+        project.status?.toLowerCase().includes("progress")) ||
       (filterStatus === "toDo" &&
         !project.status?.toLowerCase().includes("complete") &&
-        !project.status?.toLowerCase().includes("progress"))
+        !project.status?.toLowerCase().includes("progress"));
 
-    return matchesSearch && matchesStatus
-  })
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -243,12 +307,15 @@ const ProjectManagement = () => {
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="admin-layout">
-      <AdminSidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
+      <AdminSidebar
+        collapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+      />
 
       <div className={`main-content ${sidebarCollapsed ? "expanded" : ""}`}>
         <div className="dashboard-header">
@@ -297,7 +364,9 @@ const ProjectManagement = () => {
           <div className="col-md-6">
             <div className="card shadow mb-4">
               <div className="card-header py-3">
-                <h6 className="m-0 font-weight-bold text-primary">Projects by Month</h6>
+                <h6 className="m-0 font-weight-bold text-primary">
+                  Projects by Month
+                </h6>
               </div>
               <div className="card-body">
                 <div style={{ height: "300px" }}>
@@ -320,7 +389,9 @@ const ProjectManagement = () => {
           <div className="col-md-6">
             <div className="card shadow mb-4">
               <div className="card-header py-3">
-                <h6 className="m-0 font-weight-bold text-primary">Project Status</h6>
+                <h6 className="m-0 font-weight-bold text-primary">
+                  Project Status
+                </h6>
               </div>
               <div className="card-body">
                 <div style={{ height: "300px" }}>
@@ -328,13 +399,16 @@ const ProjectManagement = () => {
                 </div>
                 <div className="mt-4 text-center small">
                   <span className="me-2">
-                    <i className="bi bi-circle-fill text-primary"></i> In Progress: {projectStatus.inProgress}
+                    <i className="bi bi-circle-fill text-primary"></i> In
+                    Progress: {projectStatus.inProgress}
                   </span>
                   <span className="me-2">
-                    <i className="bi bi-circle-fill text-success"></i> Completed: {projectStatus.completed}
+                    <i className="bi bi-circle-fill text-success"></i>{" "}
+                    Completed: {projectStatus.completed}
                   </span>
                   <span className="me-2">
-                    <i className="bi bi-circle-fill text-info"></i> To Do: {projectStatus.toDo}
+                    <i className="bi bi-circle-fill text-info"></i> To Do:{" "}
+                    {projectStatus.toDo}
                   </span>
                 </div>
               </div>
@@ -370,15 +444,23 @@ const ProjectManagement = () => {
                         <td>{project.deadline}</td>
                         <td>
                           <div className="btn-group">
-                            <button className="btn btn-sm btn-light" onClick={() => handleViewProject(project)}>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => handleViewProject(project)}
+                            >
                               <FaEye />
                             </button>
-                            <button className="btn btn-sm btn-light" onClick={() => handleEditProject(project)}>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => handleEditProject(project)}
+                            >
                               <FaPencilAlt />
                             </button>
                             <button
                               className="btn btn-sm btn-light"
-                              onClick={() => handleDeleteProject(project.projectId)}
+                              onClick={() =>
+                                handleDeleteProject(project.projectId)
+                              }
                             >
                               <FaTrash />
                             </button>
@@ -402,85 +484,134 @@ const ProjectManagement = () => {
 
       {/* Project Modal */}
       {showProjectModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-lg">
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  {modalMode === "view" ? "Project Details" : modalMode === "edit" ? "Edit Project" : "Add New Project"}
+                  {modalMode === "view" && "Project Details"}
+                  {modalMode === "edit" && "Edit Project"}
+                  {modalMode === "add" && "Add New Project"}
                 </h5>
-                <button type="button" className="btn-close" onClick={() => setShowProjectModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowProjectModal(false)}
+                ></button>
               </div>
+
               <div className="modal-body">
-                <form>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Project Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={selectedProject?.projectName || ""}
-                        onChange={(e) => setSelectedProject({ ...selectedProject, projectName: e.target.value })}
-                        readOnly={modalMode === "view"}
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Manager</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={selectedProject?.manager || ""}
-                        onChange={(e) => setSelectedProject({ ...selectedProject, manager: e.target.value })}
-                        readOnly={modalMode === "view"}
-                      />
-                    </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Status</label>
+                {[
+                  // { label: "Project ID", field: "projectId" },
+                  { label: "Title", field: "projectName" },
+                  {
+                    label: "Description",
+                    field: "Description",
+                    type: "textarea",
+                  },
+                  { label: "Start Date", field: "Start_Date", type: "date" },
+                  { label: "End Date", field: "deadline", type: "date" },
+                  { label: "Budget", field: "Budget" },
+                  { label: "Status", field: "status" },
+                ].map(({ label, field, type = "text" }) => (
+                  <div key={field} className="mb-3">
+                   <strong><label className="form-label">{label}</label> </strong>
+                    {modalMode === "view" ? (
+                      <p className="form-control-plaintext">
+                        {selectedProject?.[field] || "-"}
+                      </p>
+                    ) : field === "status" ? (
                       <select
                         className="form-select"
-                        value={selectedProject?.status || ""}
-                        onChange={(e) => setSelectedProject({ ...selectedProject, status: e.target.value })}
-                        disabled={modalMode === "view"}
+                        value={selectedProject?.[field] || ""}
+                        onChange={(e) =>
+                          setSelectedProject({
+                            ...selectedProject,
+                            [field]: e.target.value,
+                          })
+                        }
                       >
+                        <option value="">Select status</option>
                         <option value="To Do">To Do</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                       </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Deadline</label>
-                      <input
-                        type="date"
+                    ) : type === "textarea" ? (
+                      <textarea
                         className="form-control"
-                        value={selectedProject?.deadline || ""}
-                        onChange={(e) => setSelectedProject({ ...selectedProject, deadline: e.target.value })}
-                        readOnly={modalMode === "view"}
+                        value={selectedProject?.[field] || ""}
+                        onChange={(e) =>
+                          setSelectedProject({
+                            ...selectedProject,
+                            [field]: e.target.value,
+                          })
+                        }
                       />
-                    </div>
+                    ) : (
+                      <input
+                        type={type}
+                        className="form-control"
+                        value={selectedProject?.[field] || ""}
+                        onChange={(e) =>
+                          setSelectedProject({
+                            ...selectedProject,
+                            [field]: e.target.value,
+                          })
+                        }
+                      />
+                    )}
                   </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea
-                      className="form-control"
-                      rows="3"
-                      value={selectedProject?.description || ""}
-                      onChange={(e) => setSelectedProject({ ...selectedProject, description: e.target.value })}
-                      readOnly={modalMode === "view"}
-                    ></textarea>
-                  </div>
-                </form>
+                ))}
+
+                {/* Manager Dropdown */}
+                <div className="mb-3">
+                 <strong> <label className="form-label">Manager</label></strong>
+                  {modalMode === "view" ? (
+                    <p className="form-control-plaintext">
+                      {selectedProject?.managerId || "-"}
+                    </p>
+                  ) : (
+                    <select
+                      className="form-select"
+                      value={selectedProject?.managerId || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          managerId: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Select Manager</option>
+                      {projects.map((project) => (
+                        <option key={project.managerId} value={project.managerId}>
+                          {project.manager}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
+
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowProjectModal(false)}>
-                  {modalMode === "view" ? "Close" : "Cancel"}
-                </button>
-                {modalMode !== "view" && (
-                  <button type="button" className="btn btn-primary" onClick={handleSaveProject}>
-                    {modalMode === "add" ? "Add Project" : "Save Changes"}
+                {modalMode !== "view" ? (
+                  <button
+                    className="btn btn-success"
+                    onClick={handleSaveProject}
+                  >
+                    Save Project
                   </button>
-                )}
+                ) : null}
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowProjectModal(false)}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -533,14 +664,14 @@ const ProjectManagement = () => {
           .main-content {
             margin-left: 70px;
           }
-          
+
           .main-content.expanded {
             margin-left: 0;
           }
         }
       `}</style>
     </div>
-  )
-}
+  );
+};
 
-export default ProjectManagement
+export default ProjectManagement;

@@ -16,7 +16,7 @@ const ProjectList = ({ projectId }) => {
     startdate: "",
     enddate: "",
     budget: "",
-    status:"",
+    status: "",
   });
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ const ProjectList = ({ projectId }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:8080/backend-servlet/ViewProjectServlet",
+        "http://localhost:8888/backend-servlet/ViewProjectServlet",
         {
           method: "GET",
           headers: {
@@ -89,7 +89,7 @@ const ProjectList = ({ projectId }) => {
   const fetchTeamMembers = async (projectId) => {
     try {
       const response = await fetch(
-        "http://localhost:8080/backend-servlet/TeamMemberINProject",
+        "http://localhost:8888/backend-servlet/TeamMemberINProject",
         {
           method: "POST",
           headers: {
@@ -129,7 +129,7 @@ const ProjectList = ({ projectId }) => {
       startdate: project.startDate,
       enddate: project.endDate,
       budget: project.budget,
-      status:project.status,
+      status: project.status,
     });
     setShowModal(true);
   };
@@ -144,7 +144,7 @@ const ProjectList = ({ projectId }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/backend-servlet/UpdateProjectServlet`,
+        `http://localhost:8888/backend-servlet/UpdateProjectServlet`,
         {
           method: "POST",
           headers: {
@@ -173,14 +173,13 @@ const ProjectList = ({ projectId }) => {
     if (isConfirmed) {
       try {
         const response = await fetch(
-          `http://localhost:8080/backend-servlet/DeleteProjectServlet`,
+          `http://localhost:8888/backend-servlet/DeleteProjectServlet`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ Project_ID: id }),
-            credentials: "include", 
           }
         );
 
@@ -206,7 +205,7 @@ const ProjectList = ({ projectId }) => {
     if (isConfirmed) {
       try {
         const response = await fetch(
-          `http://localhost:8080/backend-servlet/RemoveMemberFromProjectServlet`,
+          `http://localhost:8888/backend-servlet/RemoveMemberFromProjectServlet`,
           {
             method: "POST",
             headers: {
@@ -240,50 +239,63 @@ const ProjectList = ({ projectId }) => {
     }
   };
 
-// Calculate project status with manual override
-const getProjectStatus = (startDate, endDate, manualStatus) => {
-  const now = new Date();
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const getProjectStatus = (startDate, endDate, manualStatus) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-  // Manual status mapping to badge classes
-  const manualStatusMap = {
-    "To Do": { badgeClass: "bg-warning", progress: 0 },
-    "In Progress": { badgeClass: "bg-primary", progress: 50 },
-    "Completed": { badgeClass: "bg-success", progress: 100 },
+    const manualStatusMap = {
+      "To Do": { badgeClass: "bg-warning", progress: 0 },
+      "In Progress": { badgeClass: "bg-primary", progress: 50 },
+      Completed: { badgeClass: "bg-success", progress: 100 },
+    };
+
+    if (manualStatus && manualStatusMap[manualStatus]) {
+      return {
+        status: manualStatus,
+        badgeClass: manualStatusMap[manualStatus].badgeClass,
+        progress: manualStatusMap[manualStatus].progress,
+      };
+    }
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return { status: "Unknown", badgeClass: "bg-secondary" };
+    }
+
+    if (now < start) {
+      // For projects not started yet, return "To Do"
+      return { status: "To Do", badgeClass: "bg-warning", progress: 0 };
+    } else if (now > end) {
+      return { status: "Completed", badgeClass: "bg-success", progress: 100 };
+    } else {
+      const totalDuration = end - start;
+      const elapsed = now - start;
+      const progress = Math.round((elapsed / totalDuration) * 100);
+
+      return {
+        status: "In Progress",
+        badgeClass: "bg-primary",
+        progress,
+      };
+    }
   };
 
-  // If manual status is provided and valid
-  if (manualStatus && manualStatusMap[manualStatus]) {
-    return {
-      status: manualStatus,
-      badgeClass: manualStatusMap[manualStatus].badgeClass,
-      progress: manualStatusMap[manualStatus].progress,
-    };
-  }
+  const categorizedProjects = {
+    "To Do": [],
+    "In Progress": [],
+    Completed: [],
+  };
 
-  // Fallback to automatic status calculation
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return { status: "Unknown", badgeClass: "bg-secondary" };
-  }
-
-  if (now < start) {
-    return { status: "Not Started", badgeClass: "bg-info", progress: 0 };
-  } else if (now > end) {
-    return { status: "Completed", badgeClass: "bg-success", progress: 100 };
-  } else {
-    const totalDuration = end - start;
-    const elapsed = now - start;
-    const progress = Math.round((elapsed / totalDuration) * 100);
-
-    return {
-      status: "In Progress",
-      badgeClass: "bg-primary",
-      progress,
-    };
-  }
-};
-
+  const handleProjectCategorization = (projects) => {
+    projects.forEach((project) => {
+      const { status } = getProjectStatus(
+        project.startDate,
+        project.endDate,
+        project.status
+      );
+      categorizedProjects[status]?.push(project);
+    });
+  };
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -387,6 +399,23 @@ const getProjectStatus = (startDate, endDate, manualStatus) => {
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const groupedProjects = {
+    "To Do": [],
+    "In Progress": [],
+    Completed: [],
+  };
+
+  getFilteredAndSortedProjects().forEach((project) => {
+    const { status } = getProjectStatus(
+      project.startDate,
+      project.endDate,
+      project.status
+    );
+    if (groupedProjects[status]) {
+      groupedProjects[status].push(project);
+    }
+  });
+
   if (loading) {
     return (
       <div
@@ -399,6 +428,8 @@ const getProjectStatus = (startDate, endDate, manualStatus) => {
       </div>
     );
   }
+
+  handleProjectCategorization(getFilteredAndSortedProjects());
 
   return (
     <div className="container-fluid py-4">
@@ -491,196 +522,232 @@ const getProjectStatus = (startDate, endDate, manualStatus) => {
       ) : (
         <>
           {viewMode === "cards" ? (
-            // Cards View
+            // Board View
             <div className="row">
-              {getFilteredAndSortedProjects().map((project) => {
-                const { status, badgeClass, progress } = getProjectStatus(
-                  project.startDate,
-                  project.endDate,
-                  project.status 
-                );
-                const daysRemaining = getDaysRemaining(project.endDate);
-
-                return (
+              {["To Do", "In Progress", "Completed"].map((category) => (
+                <div key={category} className="col-md-4">
+                  <div className="card shadow-sm mb-4">
                   <div
-                    key={project.projectId}
-                    className="col-md-6 col-lg-4 mb-4"
-                  >
-                    <div
-                      className={`card shadow-sm border-0 h-100 ${
-                        selectedProject?.projectId === project.projectId
-                          ? "border-primary"
-                          : ""
-                      }`}
-                    >
-                      <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                        <h5
-                          className="card-title mb-0 text-primary"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleSelectProject(project)}
-                        >
-                          {project.name}
-                        </h5>
-                        <span className={`badge ${badgeClass}`}>{status}</span>
-                      </div>
-                      <div className="card-body">
-                        <p className="card-text text-muted mb-3">
-                          {project.description.length > 100
-                            ? `${project.description.substring(0, 100)}...`
-                            : project.description}
-                        </p>
+            className={`card-header d-flex align-items-center gap-2 ${
+              category === "To Do"
+                ? "bg-light"
+                : category === "In Progress"
+                ? "bg-primary bg-opacity-10"
+                : "bg-success bg-opacity-10"
+            }`}
+          >
+            <span
+              className={`badge rec-pill ${
+                category === "To Do"
+                  ? "bg-secondary"
+                  : category === "In Progress"
+                  ? "bg-primary"
+                  : "bg-success"
+              }`}
+            >
+              {categorizedProjects[category].length}
+            </span>
 
-                        <div className="d-flex justify-content-between mb-2">
-                          <div className="small text-muted">
-                            <i className="bi bi-calendar me-1"></i>{" "}
-                            {formatDate(project.startDate)}
-                          </div>
-                          <div className="small text-muted">
-                            <i className="bi bi-calendar-check me-1"></i>{" "}
-                            {formatDate(project.endDate)}
-                          </div>
-                        </div>
+                      <h5 className="mb-0">{category}</h5>
+                    </div>
+                    <div className="card-body" style={{ minHeight: "300px" }}>
+                      {categorizedProjects[category].length === 0 ? (
+                        <p className="text-muted small">No projects</p>
+                      ) : (
+                        categorizedProjects[category].map((project) => {
+                          const { status, badgeClass, progress } =
+                            getProjectStatus(
+                              project.startDate,
+                              project.endDate,
+                              project.status
+                            );
+                          const daysRemaining = getDaysRemaining(
+                            project.endDate
+                          );
 
-                        {progress !== undefined && (
-                          <div className="mb-3">
-                            <div className="d-flex justify-content-between mb-1">
-                              <small>Progress</small>
-                              <small>{progress}%</small>
-                            </div>
-                            <div className="progress" style={{ height: "6px" }}>
-                              <div
-                                className="progress-bar"
-                                role="progressbar"
-                                style={{ width: `${progress}%` }}
-                                aria-valuenow={progress}
-                                aria-valuemin="0"
-                                aria-valuemax="100"
-                              ></div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <div>
-                            <span className="fw-bold">
-                              {formatCurrency(project.budget)}
-                            </span>
-                            <span className="text-muted ms-1">budget</span>
-                          </div>
-                          {daysRemaining !== null && (
+                          return (
                             <div
-                              className={`small ${
-                                daysRemaining < 0
-                                  ? "text-danger"
-                                  : daysRemaining < 7
-                                  ? "text-warning"
-                                  : "text-success"
+                              key={project.projectId}
+                              className={`card mb-3 shadow-sm border-0 ${
+                                selectedProject?.projectId === project.projectId
+                                  ? "border-primary"
+                                  : ""
                               }`}
                             >
-                              {daysRemaining < 0
-                                ? `${Math.abs(daysRemaining)} days overdue`
-                                : daysRemaining === 0
-                                ? "Due today"
-                                : `${daysRemaining} days remaining`}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="d-flex justify-content-between">
-                          <button
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => handleSelectProject(project)}
-                          >
-                            {selectedProject?.projectId === project.projectId
-                              ? "Hide Details"
-                              : "View Details"}
-                          </button>
-                          <div>
-                            <button
-                              className="btn btn-sm btn-outline-secondary me-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(project);
-                              }}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(project.projectId);
-                              }}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {selectedProject?.projectId === project.projectId && (
-                        <div className="card-footer bg-light">
-                          <h6 className="mb-3">Team Members</h6>
-                          {teamMembers.length === 0 ? (
-                            <p className="text-muted small">
-                              No team members assigned to this project.
-                            </p>
-                          ) : (
-                            <div className="row g-2">
-                              {teamMembers.map((member) => (
-                                <div key={member.id} className="col-md-6">
-                                  <div className="d-flex align-items-center p-2 bg-white rounded shadow-sm">
+                              <div className="card-body p-3">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <h6
+                                    className="mb-0 text-primary"
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => handleSelectProject(project)}
+                                  >
+                                    {project.name}
+                                  </h6>
+                                  <span className={`badge ${badgeClass}`}>
+                                    {status}
+                                  </span>
+                                </div>
+                                <p className="small text-muted mb-2">
+                                  {project.description?.length > 80
+                                    ? project.description.substring(0, 80) +
+                                      "..."
+                                    : project.description}
+                                </p>
+                                <div className="d-flex justify-content-between small text-muted mb-2">
+                                  <span>
+                                    <i className="bi bi-calendar me-1"></i>
+                                    {formatDate(project.startDate)}
+                                  </span>
+                                  <span>
+                                    <i className="bi bi-calendar-check me-1"></i>
+                                    {formatDate(project.endDate)}
+                                  </span>
+                                </div>
+                                <div
+                                  className="progress"
+                                  style={{ height: "6px" }}
+                                >
+                                  <div
+                                    className="progress-bar"
+                                    style={{ width: `${progress}%` }}
+                                    aria-valuenow={progress}
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                  ></div>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center mt-3">
+                                  <div>
+                                    <span className="fw-bold">
+                                      {formatCurrency(project.budget)}
+                                    </span>
+                                    <span className="text-muted ms-1">
+                                      budget
+                                    </span>
+                                  </div>
+                                  {daysRemaining !== null && (
                                     <div
-                                      className="avatar-circle me-2 d-flex align-items-center justify-content-center"
-                                      style={{
-                                        width: "36px",
-                                        height: "36px",
-                                        borderRadius: "50%",
-                                        backgroundColor: getAvatarColor(
-                                          member.name
-                                        ),
-                                        color: "white",
-                                        fontSize: "0.9rem",
-                                        fontWeight: "bold",
+                                      className={`small ${
+                                        daysRemaining < 0
+                                          ? "text-danger"
+                                          : daysRemaining < 7
+                                          ? "text-warning"
+                                          : "text-success"
+                                      }`}
+                                    >
+                                      {daysRemaining < 0
+                                        ? `${Math.abs(
+                                            daysRemaining
+                                          )} days overdue`
+                                        : daysRemaining === 0
+                                        ? "Due today"
+                                        : `${daysRemaining} days remaining`}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="d-flex justify-content-between mt-3">
+                                  <button
+                                    className="btn btn-sm btn-outline-primary"
+                                    onClick={() => handleSelectProject(project)}
+                                  >
+                                    {selectedProject?.projectId ===
+                                    project.projectId
+                                      ? "Hide Details"
+                                      : "View Details"}
+                                  </button>
+                                  <div>
+                                    <button
+                                      className="btn btn-sm btn-outline-secondary me-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditClick(project);
                                       }}
                                     >
-                                      {getInitials(member.name)}
-                                    </div>
-                                    <div className="flex-grow-1 min-width-0">
-                                      <div className="fw-medium text-truncate">
-                                        {member.name}
-                                      </div>
-                                      <div className="small text-muted text-truncate">
-                                        {member.Subrole || "Team Member"}
-                                      </div>
-                                    </div>
+                                      <i className="bi bi-pencil"></i>
+                                    </button>
                                     <button
-                                      className="btn btn-sm btn-light rounded-circle p-1"
-                                      onClick={() =>
-                                        handleDeleteMember(
-                                          member.id,
-                                          project.projectId
-                                        )
-                                      }
-                                      title="Remove member"
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(project.projectId);
+                                      }}
                                     >
-                                      <i className="bi bi-x"></i>
+                                      <i className="bi bi-trash"></i>
                                     </button>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
+                              {selectedProject?.projectId ===
+                                project.projectId && (
+                                <div className="card-footer bg-light">
+                                  <h6 className="mb-3">Team Members</h6>
+                                  {teamMembers.length === 0 ? (
+                                    <p className="text-muted small">
+                                      No team members assigned to this project.
+                                    </p>
+                                  ) : (
+                                    <div className="row g-2">
+                                      {teamMembers.map((member) => (
+                                        <div
+                                          key={member.id}
+                                          className="col-md-6"
+                                        >
+                                          <div className="d-flex align-items-center p-2 bg-white rounded shadow-sm">
+                                            <div
+                                              className="avatar-circle me-2 d-flex align-items-center justify-content-center"
+                                              style={{
+                                                width: "36px",
+                                                height: "36px",
+                                                borderRadius: "50%",
+                                                backgroundColor: getAvatarColor(
+                                                  member.name
+                                                ),
+                                                color: "white",
+                                                fontSize: "0.9rem",
+                                                fontWeight: "bold",
+                                              }}
+                                            >
+                                              {getInitials(member.name)}
+                                            </div>
+                                            <div className="flex-grow-1 min-width-0">
+                                              <div className="fw-medium text-truncate">
+                                                {member.name}
+                                              </div>
+                                              <div className="small text-muted text-truncate">
+                                                {member.Subrole ||
+                                                  "Team Member"}
+                                              </div>
+                                            </div>
+                                            <button
+                                              className="btn btn-sm btn-light rounded-circle p-1"
+                                              onClick={() =>
+                                                handleDeleteMember(
+                                                  member.id,
+                                                  project.projectId
+                                                )
+                                              }
+                                              title="Remove member"
+                                            >
+                                              <i className="bi bi-x"></i>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <button className="btn btn-sm btn-primary mt-3">
+                                    <i className="bi bi-person-plus me-1"></i>{" "}
+                                    Add Team Member
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {/* <button className="btn btn-sm btn-primary mt-3">
-                            <i className="bi bi-person-plus me-1"></i> Add Team
-                            Member
-                          </button> */}
-                        </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           ) : (
             // List View
@@ -871,10 +938,10 @@ const getProjectStatus = (startDate, endDate, manualStatus) => {
                                         ))}
                                       </div>
                                     )}
-                                    {/* <button className="btn btn-sm btn-primary mt-3">
+                                    <button className="btn btn-sm btn-primary mt-3">
                                       <i className="bi bi-person-plus me-1"></i>{" "}
                                       Add Team Member
-                                    </button> */}
+                                    </button>
                                   </div>
                                 </td>
                               </tr>
@@ -1024,7 +1091,9 @@ const getProjectStatus = (startDate, endDate, manualStatus) => {
                         <select
                           className="form-select"
                           value={editData.status}
-                          onChange={(e) => setEditData({...editData,status:e.target.value})}
+                          onChange={(e) =>
+                            setEditData({ ...editData, status: e.target.value })
+                          }
                           required
                         >
                           <option value="to Do">to Do</option>

@@ -115,8 +115,8 @@ const UserManagement = () => {
     try {
       const url =
         modalMode === "add"
-          ? "http://localhost:8080/backend-servlet/AddUserServlet"
-          : "http://localhost:8080/backend-servlet/UpdateUserServlet"
+          ? "http://localhost:8080/backend-servlet/RegisterServlet"
+          : "http://localhost:8080/backend-servlet/UpdateProfileServlet"
 
       const response = await fetch(url, {
         method: "POST",
@@ -141,7 +141,7 @@ const UserManagement = () => {
   const handleDeleteUser = async (userId) => {
     if (confirm("Are you sure you want to delete this user?")) {
       try {
-        const response = await fetch("http://localhost:8080/backend-servlet/DeleteUserServlet", {
+        const response = await fetch("http://localhost:8080/backend-servlet/UserManagementDeleteServlet", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -408,13 +408,18 @@ const UserManagement = () => {
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Department</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={selectedUser?.Subrole || ""}
-                        onChange={(e) => setSelectedUser({ ...selectedUser, Subrole: e.target.value })}
-                        readOnly={modalMode === "view"}
-                      />
+                      <select
+              className="form-select"
+              id="subroleInput"
+              value={selectedUser?.Subrole}
+              onChange={(e) => setSelectedUser({ ...selectedUser, Subrole: e.target.value })}
+            >
+              <option value="Developer">Developer</option>
+              <option value="Designer">Designer</option>
+              <option value="Manager">Manager</option>
+              <option value="QA">QA</option>
+              <option value="Tester">Tester</option>
+            </select>
                     </div>
                   </div>
                   <div className="row mb-3">

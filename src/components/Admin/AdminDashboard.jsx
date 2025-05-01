@@ -20,6 +20,9 @@ import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap-icons/font/bootstrap-icons.css"
 import AdminSidebar from "../Shared/AdminSidebar"
 import { FaDownload } from "react-icons/fa"
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
 
 // Register ChartJS components
 ChartJS.register(
@@ -48,6 +51,7 @@ const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const taskChartRef = useRef(null)
+  const dashboardRef = useRef(null); // Reference for the dashboard content
 
   // Fetch the data from the backend servlet
   const fetchDashboardData = async () => {
@@ -117,7 +121,7 @@ const AdminDashboard = () => {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch("http://localhost:8080/backend-servlet/RecentActivityServlet")
+      const response = await fetch("http://localhost:8080/backend-servlet/AdminRecentActivityServlet")
       if (response.ok) {
         const data = await response.json()
         console.log("Received activities data:", data)
@@ -258,8 +262,28 @@ const AdminDashboard = () => {
     )
   }
 
+   const generatePDF = () => {
+      const input = dashboardRef.current;
+  
+      if (!input) {
+        console.error("Dashboard content is missing!");
+        return;
+      }
+  
+      html2canvas(input, { scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  
+        pdf.addImage(imgData, "PNG", 0, 10, imgWidth, imgHeight);
+        pdf.save("Admin_Dashboard_Report.pdf");
+      });
+    };
+  
+
   return (
-    <div className="admin-layout">
+    <div className="admin-layout"  ref={dashboardRef}>
       <AdminSidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
 
       <div className={`main-content ${sidebarCollapsed ? "expanded" : ""}`}>
@@ -270,7 +294,7 @@ const AdminDashboard = () => {
             <p className="text-muted">{formattedDate}</p>
           </div>
           <div className="d-flex">
-            <div className="btn-group me-3">
+            {/* <div className="btn-group me-3">
               <button
                 className={`btn ${timeframe === "week" ? "btn-primary" : "btn-outline-primary"}`}
                 onClick={() => setTimeframe("week")}
@@ -289,8 +313,8 @@ const AdminDashboard = () => {
               >
                 Year
               </button>
-            </div>
-            <button className="btn btn-success">
+            </div> */}
+            <button className="btn btn-success" onClick={generatePDF}>
               <FaDownload className="me-2" />
               Export Report
             </button>
@@ -384,7 +408,7 @@ const AdminDashboard = () => {
                 <div className="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                   <h6 className="m-0 font-weight-bold text-primary">Monthly Overview</h6>
                   <div className="dropdown no-arrow">
-                    <button
+                    {/* <button
                       className="btn btn-sm btn-light dropdown-toggle"
                       type="button"
                       id="dropdownMenuButton"
@@ -392,8 +416,8 @@ const AdminDashboard = () => {
                       aria-expanded="false"
                     >
                       <i className="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                    </button> */}
+                    {/* <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
                       <li>
                         <a className="dropdown-item" href="#">
                           View Details
@@ -404,7 +428,7 @@ const AdminDashboard = () => {
                           Export Data
                         </a>
                       </li>
-                    </ul>
+                    </ul> */}
                   </div>
                 </div>
                 <div className="card-body">
@@ -431,7 +455,7 @@ const AdminDashboard = () => {
                 <div className="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                   <h6 className="m-0 font-weight-bold text-primary">User Distribution</h6>
                   <div className="dropdown no-arrow">
-                    <button
+                    {/* <button
                       className="btn btn-sm btn-light dropdown-toggle"
                       type="button"
                       id="dropdownMenuButton"
@@ -439,8 +463,8 @@ const AdminDashboard = () => {
                       aria-expanded="false"
                     >
                       <i className="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                    </button> */}
+                    {/* <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
                       <li>
                         <a className="dropdown-item" href="#">
                           View Details
@@ -451,7 +475,7 @@ const AdminDashboard = () => {
                           Export Data
                         </a>
                       </li>
-                    </ul>
+                    </ul> */}
                   </div>
                 </div>
                 <div className="card-body">

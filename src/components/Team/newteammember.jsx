@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -102,6 +101,72 @@ const TeamMembers = ({ projectId }) => {
     },
   ];
 
+  // const mockTasks = [
+  //   {
+  //     id: 1,
+  //     title: "Implement user authentication",
+  //     description: "Add login, registration, and password reset functionality",
+  //     assignee: "Jane Smith",
+  //     priority: "high",
+  //     status: "in-progress",
+  //     dueDate: new Date(Date.now() + 172800000).toISOString(),
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Design dashboard layout",
+  //     description: "Create wireframes and mockups for the main dashboard",
+  //     assignee: "Mike Johnson",
+  //     priority: "medium",
+  //     status: "completed",
+  //     dueDate: new Date(Date.now() - 86400000).toISOString(),
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "API integration",
+  //     description: "Connect frontend components to backend APIs",
+  //     assignee: "Jane Smith",
+  //     priority: "high",
+  //     status: "todo",
+  //     dueDate: new Date(Date.now() + 259200000).toISOString(),
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "User testing",
+  //     description: "Conduct user testing sessions and gather feedback",
+  //     assignee: "Sarah Williams",
+  //     priority: "medium",
+  //     status: "todo",
+  //     dueDate: new Date(Date.now() + 345600000).toISOString(),
+  //   },
+  // ];
+
+  const mockAnnouncements = [
+    {
+      id: 1,
+      title: "Project Timeline Update",
+      content:
+        "We've adjusted the project timeline to accommodate the new requirements. The new deadline is now June 15th.",
+      author: "John Doe",
+      timestamp: new Date(Date.now() - 259200000).toISOString(),
+    },
+    {
+      id: 2,
+      title: "New Team Member",
+      content:
+        "Please welcome Sarah Williams to our team! She'll be joining us as a QA Engineer starting next week.",
+      author: "John Doe",
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+    },
+    {
+      id: 3,
+      title: "Client Meeting",
+      content:
+        "We have a client review meeting scheduled for Friday at 2 PM. Please prepare your progress reports.",
+      author: "John Doe",
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ];
+
   const mockFiles = [
     {
       id: 1,
@@ -137,24 +202,28 @@ const TeamMembers = ({ projectId }) => {
     },
   ];
 
-  // useEffect(() => {
-  //   // Initialize mock data for demonstration
-  //   // setComments(mockComments)
-  //   // setChatMessages(mockChatMessages)
-  //   // setFiles(mockFiles)
-  //   // Initialize Socket.io connection
-  //   // In a real implementation, connect to your actual Socket.io server
-  //   // socketRef.current = io("http://localhost:8080");
-  //   // Socket event listeners would go here
-  //   // socketRef.current.on("new_message", (message) => {
-  //   //   setChatMessages((prevMessages) => [...prevMessages, message]);
-  //   // });
-  //   // return () => {
-  //   //   if (socketRef.current) {
-  //   //     socketRef.current.disconnect();
-  //   //   }
-  //   // };
-  // }, []);
+  useEffect(() => {
+    // Initialize mock data for demonstration
+    setComments(mockComments);
+    setChatMessages(mockChatMessages);
+    setAnnouncements(mockAnnouncements);
+    setFiles(mockFiles);
+
+    // Initialize Socket.io connection
+    // In a real implementation, connect to your actual Socket.io server
+    // socketRef.current = io("http://localhost:8080");
+
+    // // Socket event listeners would go here
+    // socketRef.current.on("new_message", (message) => {
+    //   setChatMessages((prevMessages) => [...prevMessages, message]);
+    // });
+
+    // return () => {
+    //   if (socketRef.current) {
+    //     socketRef.current.disconnect();
+    //   }
+    // };
+  }, []);
 
   // Scroll to bottom of chat when new messages arrive
   useEffect(() => {
@@ -167,7 +236,7 @@ const TeamMembers = ({ projectId }) => {
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
     const userId = loggedInUser ? loggedInUser.userId : null;
 
-    
+    if (projectId !== null && userId !== null) {
       const fetchProjectDetails = async () => {
         try {
           setLoading(true);
@@ -213,14 +282,14 @@ const TeamMembers = ({ projectId }) => {
                   skills: member.skills || "JavaScript, React, Node.js",
                 })),
                 description:
-                  project.Description ||
+                  project.description ||
                   "This project aims to develop a comprehensive team management system with features for task tracking, communication, and resource allocation.",
                 startDate: project.startDate || "2023-01-15",
                 endDate: project.endDate || "2023-12-31",
                 status: project.status || "In Progress",
-                // completionPercentage: project.completionPercentage || 65,
+                completionPercentage: project.completionPercentage || 65,
                 budget: project.budget || "$120,000",
-                // client: project.client || "Acme Corporation",
+                client: project.client || "Acme Corporation",
               })
             );
 
@@ -243,7 +312,7 @@ const TeamMembers = ({ projectId }) => {
                   startDate: "2023-01-15",
                   endDate: "2023-12-31",
                   status: "In Progress",
-                  // completionPercentage: 65,
+                  completionPercentage: 65,
                   budget: "$120,000",
                   client: "Acme Corporation",
                   members: [
@@ -302,95 +371,8 @@ const TeamMembers = ({ projectId }) => {
       };
 
       fetchProjectDetails();
-    
+    }
   }, [projectId]);
-
-  // Fetch project files when the active tab changes to files or when the active project changes
-  useEffect(() => {
-    if (activeTab === "files" && activeProject) {
-      fetchProjectFiles();
-    }
-  }, [activeTab, activeProject]);
-
-  // Function to fetch project files
-  const fetchProjectFiles = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/ViewUploadFileServlet?projectId=${activeProject}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch project files");
-      }
-
-      const data = await response.json();
-
-      // Format size and timestamp
-      const formattedFiles = data.map((file) => ({
-        ...file,
-        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-        timestamp: new Date(file.timestamp).toISOString(),
-      }));
-
-      setFiles(formattedFiles);
-    } catch (error) {
-      console.error("Error fetching project files:", error);
-      // Fallback to mock data if API fails
-      setFiles(mockFiles);
-    }
-  };
-
-  const getCurrentUserId = () => {
-    // Retrieve the logged-in user data from localStorage
-    const loggedInUser = localStorage.getItem("loggedInUser");
-    
-    // If loggedInUser exists, parse it and return the userId
-    if (loggedInUser) {
-      const user = JSON.parse(loggedInUser);
-      return user.userId; // Return the userId
-    }
-  
-    // If no user data is found, return null or handle accordingly
-    return null;
-  };
-  
-
-  const deleteFile = async (fileId, uploadedBy) => {
-    const userId = getCurrentUserId(); 
-    console.log('fileId:', fileId, 'uploadedBy:', uploadedBy); // Add this log
-    try {
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/DeleteFileServlet`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            fileId: fileId,
-            uploadedBy: userId,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert("File deleted successfully!");
-        fetchProjectFiles(); // refresh list
-      } else {
-        alert(result.message || "Failed to delete file.");
-      }
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      alert("Server error while deleting.");
-    }
-  };
 
   // Get unique roles from all members across all projects
   const getAllRoles = () => {
@@ -588,111 +570,21 @@ const TeamMembers = ({ projectId }) => {
     }
   };
 
-  // Fetch user from localStorage
-  const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
-
-  // Load comments when tab or project changes
-  useEffect(() => {
-    if (activeTab === "comments" && activeProject) {
-      fetchComments();
-    }
-  }, [activeTab, activeProject]);
-
-  // Fetch comments from ViewCommentServlet
-  const fetchComments = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/ViewCommentServlet?projectId=${activeProject}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch comments");
-      }
-      const data = await response.json();
-      setComments(data);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  };
-
   // Handle adding a new comment
-  const handleAddComment = async () => {
+  const handleAddComment = () => {
     if (!newComment.trim()) return;
 
-    try {
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/AddCommentServlet`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            userId: loggedInUser.userId,
-            content: newComment,
-            projectId: activeProject,
-          }),
-        }
-      );
+    const comment = {
+      id: comments.length + 1,
+      author: "You", // In a real app, get from logged-in user
+      authorRole: "Team Member", // In a real app, get from logged-in user
+      content: newComment,
+      timestamp: new Date().toISOString(),
+      avatar: null,
+    };
 
-      if (!response.ok) {
-        throw new Error("Failed to post comment");
-      }
-
-      setNewComment("");
-      fetchComments(); // Refresh comments after adding
-    } catch (error) {
-      console.error("Error posting comment:", error);
-    }
-  };
-
-  // Send like request
-  const handleLike = async (commentId) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/backend-servlet/LikeCommentServlet?commentId=${commentId}`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-      if (!res.ok) throw new Error("Failed to like comment");
-      alert("Liked!");
-    } catch (error) {
-      console.error("Like error:", error);
-    }
-  };
-
-  // Delete comment
-  const handleDelete = async (commentId) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/backend-servlet/DeleteCommentServlet?commentId=${commentId}`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-      if (!res.ok) throw new Error("Failed to delete comment");
-      alert("Deleted!");
-      fetchComments();
-    } catch (error) {
-      console.error("Delete error:", error);
-    }
-  };
-
-  // Report comment
-  const handleReport = async (commentId) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/backend-servlet/ReportCommentServlet?commentId=${commentId}`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-      if (!res.ok) throw new Error("Failed to report comment");
-      alert("Reported!");
-    } catch (error) {
-      console.error("Report error:", error);
-    }
+    setComments([...comments, comment]);
+    setNewComment("");
   };
 
   // Handle sending a chat message
@@ -754,42 +646,30 @@ const TeamMembers = ({ projectId }) => {
   const handleFileUpload = async (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
-
+  
     setUploadingFile(true);
-
-    // Parse user info from localStorage
-    const userInfo = JSON.parse(localStorage.getItem("loggedInUser")) || {};
-    const uploadedBy = userInfo?.userId ?? "Unknown";
-
+  
     const formData = new FormData();
     formData.append("file", selectedFile);
-    formData.append("uploadedBy", uploadedBy);
-    formData.append("projectId", activeProject); // Use the currently selected project
-
+    formData.append("uploadedBy", "You"); // Optional - replace with actual username
+  
     try {
-      for (const pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
-
-      const response = await fetch(
-        "http://localhost:8080/backend-servlet/UploadFileServlet",
-        {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        }
-      );
-
+      const response = await fetch("http://localhost:8080/backend-servlet/UploadFileServlet", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+  
       const result = await response.json();
       console.log("Upload result:", result);
-
+  
       if (result.success) {
         const fileExtension = selectedFile.name.split(".").pop();
         const newFile = {
           id: result.id,
           name: selectedFile.name,
           size: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
-          uploadedBy: uploadedBy,
+          uploadedBy: "You",
           timestamp: new Date().toISOString(),
           type: fileExtension,
         };
@@ -798,46 +678,11 @@ const TeamMembers = ({ projectId }) => {
     } catch (error) {
       console.error("Error uploading file:", error);
     }
-
+  
     setUploadingFile(false);
     e.target.value = null; // reset
   };
-
-  // Handle file download
-  const handleFileDownload = async (fileId, fileName) => {
-    try {
-      console.log("sending downloading files", fileId);
-      const response = await fetch(
-        `http://localhost:8080/backend-servlet/DownloadFileServlet?fileId=${fileId}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to download file");
-      }
-
-      // Create a blob from the response
-      const blob = await response.blob();
-
-      // Create a download link and trigger the download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      alert("Failed to download file. Please try again later.");
-    }
-  };
+  
 
   // Handle task status change
   const handleTaskStatusChange = (taskId, newStatus) => {
@@ -968,7 +813,15 @@ const TeamMembers = ({ projectId }) => {
                 Team Members
               </button>
             </li>
-
+            <li className="nav-item">
+              <button
+                className={`nav-link ${activeTab === "chat" ? "active" : ""}`}
+                onClick={() => setActiveTab("chat")}
+              >
+                <i className="bi bi-chat-dots me-2"></i>
+                Chat
+              </button>
+            </li>
             <li className="nav-item">
               <button
                 className={`nav-link ${activeTab === "files" ? "active" : ""}`}
@@ -978,7 +831,17 @@ const TeamMembers = ({ projectId }) => {
                 Files
               </button>
             </li>
-
+            <li className="nav-item">
+              <button
+                className={`nav-link ${
+                  activeTab === "announcements" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("announcements")}
+              >
+                <i className="bi bi-megaphone me-2"></i>
+                Announcements
+              </button>
+            </li>
             <li className="nav-item">
               <button
                 className={`nav-link ${
@@ -993,131 +856,6 @@ const TeamMembers = ({ projectId }) => {
           </ul>
         </div>
       </div>
-
-      {/* Project Details Modal */}
-      {showProjectModal && (
-        <div
-          className="modal fade show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-          tabIndex="-1"
-        >
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {currentProject.projectName} - Details
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowProjectModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="mb-4">
-                      <h6 className="text-muted mb-2">Project Description</h6>
-                      <p>{currentProject.description}</p>
-                    </div>
-
-                    <div className="mb-4">
-                      <h6 className="text-muted mb-2">Timeline</h6>
-                      <div className="d-flex justify-content-between">
-                        <div>
-                          <small className="text-muted">Start Date</small>
-                          <p className="mb-0">{currentProject.startDate}</p>
-                        </div>
-                        <div>
-                          <small className="text-muted">End Date</small>
-                          <p className="mb-0">{currentProject.endDate}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <h6 className="text-muted mb-2">Team Size</h6>
-                      <p className="mb-0">
-                        {currentProject.members.length} Members
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6">
-                    <div className="mb-4">
-                      <h6 className="text-muted mb-2">Status</h6>
-                      <div className="d-flex align-items-center">
-                        <span
-                          className={`badge ${
-                            currentProject.status === "Completed"
-                              ? "bg-success"
-                              : currentProject.status === "In Progress"
-                              ? "bg-primary"
-                              : currentProject.status === "To Do"
-                              ? "bg-warning"
-                              : "bg-secondary"
-                          } me-2`}
-                        >
-                          {currentProject.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* <div className="mb-4">
-                      <h6 className="text-muted mb-2">Completion</h6>
-                      <div className="progress" style={{ height: "20px" }}>
-                        <div
-                          className="progress-bar"
-                          role="progressbar"
-                          style={{ width: `${currentProject.completionPercentage}%` }}
-                          aria-valuenow={currentProject.completionPercentage}
-                          aria-valuemin="0"
-                          aria-valuemax="100"
-                        >
-                          {currentProject.completionPercentage}%
-                        </div>
-                      </div>
-                    </div> */}
-
-                    <div className="mb-4">
-                      <h6 className="text-muted mb-2">Budget</h6>
-                      <p className="mb-0">{currentProject.budget}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row mt-3">
-                  <div className="col-12">
-                    <h6 className="text-muted mb-3">Team Composition</h6>
-                    <div className="d-flex flex-wrap">
-                      {roles.map((role) => {
-                        const count = currentProject.members.filter(
-                          (m) => m.Subrole === role
-                        ).length;
-                        return (
-                          <div key={role} className="me-3 mb-2">
-                            <span className="badge bg-light text-dark p-2">
-                              {role}: <span className="fw-bold">{count}</span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowProjectModal(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Team Members Tab Content */}
       {activeTab === "members" && (
@@ -1382,102 +1120,6 @@ const TeamMembers = ({ projectId }) => {
               )}
             </>
           )}
-
-          {/* Team Structure Visualization */}
-          <div className="row mt-4">
-            <div className="col-12">
-              <div className="card shadow-sm border-0">
-                <div className="card-header bg-light">
-                  <h5 className="card-title mb-0">Team Structure</h5>
-                </div>
-                <div className="card-body">
-                  <div className="team-structure">
-                    <div className="d-flex flex-column align-items-center">
-                      {/* Project Manager */}
-                      <div className="mb-4">
-                        <div className="team-node manager-node">
-                          <div
-                            className="avatar-circle d-flex align-items-center justify-content-center mb-2 mx-auto"
-                            style={{
-                              width: "60px",
-                              height: "60px",
-                              borderRadius: "50%",
-                              backgroundColor: "#4e73df",
-                              color: "white",
-                              fontSize: "1.2rem",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {getInitials(currentProject.projectManager)}
-                          </div>
-                          <div className="text-center">
-                            <h6 className="mb-0">
-                              {currentProject.projectManager}
-                            </h6>
-                            <span className="badge bg-primary">
-                              Project Manager
-                            </span>
-                          </div>
-                        </div>
-                        <div className="team-connector"></div>
-                      </div>
-
-                      {/* Team Members by Role */}
-                      <div className="d-flex flex-wrap justify-content-center">
-                        {roles.map((role) => {
-                          const roleMembers = currentProject.members.filter(
-                            (m) => m.Subrole === role
-                          );
-                          if (roleMembers.length === 0) return null;
-
-                          return (
-                            <div key={role} className="team-role mx-4 mb-3">
-                              <div className="text-center mb-2">
-                                <span className="badge bg-secondary">
-                                  {role}
-                                </span>
-                              </div>
-                              <div
-                                className="d-flex flex-wrap justify-content-center"
-                                style={{ maxWidth: "300px" }}
-                              >
-                                {roleMembers.map((member) => (
-                                  <div
-                                    key={member.id}
-                                    className="team-member-node mx-2"
-                                  >
-                                    <div
-                                      className="avatar-circle d-flex align-items-center justify-content-center mb-1 mx-auto"
-                                      style={{
-                                        width: "40px",
-                                        height: "40px",
-                                        borderRadius: "50%",
-                                        backgroundColor: getAvatarColor(
-                                          member.name
-                                        ),
-                                        color: "white",
-                                        fontSize: "0.8rem",
-                                        fontWeight: "bold",
-                                      }}
-                                    >
-                                      {getInitials(member.name)}
-                                    </div>
-                                    <div className="text-center">
-                                      <small>{member.name.split(" ")[0]}</small>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
@@ -1575,6 +1217,7 @@ const TeamMembers = ({ projectId }) => {
         </div>
       )}
 
+      
       {/* Files Tab Content */}
       {activeTab === "files" && (
         <div className="row">
@@ -1646,21 +1289,11 @@ const TeamMembers = ({ projectId }) => {
                           <td>{formatDateNoTime(file.timestamp)}</td>
                           <td>
                             <div className="btn-group">
-                              <button
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() =>
-                                  handleFileDownload(file.id, file.name)
-                                }
-                              >
+                              <button className="btn btn-sm btn-outline-primary">
                                 <i className="bi bi-download"></i>
                               </button>
-                              <button
-                                className="btn btn-sm btn-outline-secondary"
-                                onClick={() =>
-                                  deleteFile(file.id)
-                                }
-                              >
-                                <i className="bi bi-trash"></i>
+                              <button className="btn btn-sm btn-outline-secondary">
+                                <i className="bi bi-share"></i>
                               </button>
                             </div>
                           </td>
@@ -1683,129 +1316,130 @@ const TeamMembers = ({ projectId }) => {
         </div>
       )}
 
-      {/* Comments Tab Content */}
-      {activeTab === "comments" && (
+      {/* Announcements Tab Content
+      {activeTab === "announcements" && (
         <div className="row">
           <div className="col-12 mb-4">
             <div className="card shadow-sm border-0">
-              <div className="card-body">
-                <h5 className="card-title mb-3">Project Comments</h5>
-                <div className="mb-3">
-                  <textarea
-                    className="form-control"
-                    rows="3"
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                  ></textarea>
-                  <div className="d-flex justify-content-end mt-2">
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleAddComment}
-                    >
-                      Post Comment
-                    </button>
+              <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 className="card-title mb-0">Announcements</h5>
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#newAnnouncementForm"
+                  aria-expanded="false"
+                  aria-controls="newAnnouncementForm"
+                >
+                  <i className="bi bi-plus"></i> New Announcement
+                </button>
+              </div>
+              <div className="collapse" id="newAnnouncementForm">
+                <div className="card-body">
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <label htmlFor="announcementTitle" className="form-label">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="announcementTitle"
+                        value={newAnnouncement.title}
+                        onChange={(e) =>
+                          setNewAnnouncement({
+                            ...newAnnouncement,
+                            title: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label
+                        htmlFor="announcementContent"
+                        className="form-label"
+                      >
+                        Content
+                      </label>
+                      <textarea
+                        className="form-control"
+                        id="announcementContent"
+                        rows="3"
+                        value={newAnnouncement.content}
+                        onChange={(e) =>
+                          setNewAnnouncement({
+                            ...newAnnouncement,
+                            content: e.target.value,
+                          })
+                        }
+                      ></textarea>
+                    </div>
+                    <div className="col-12">
+                      <button
+                        className="btn btn-primary"
+                        type="button"
+                        onClick={handleAddAnnouncement}
+                      >
+                        Post Announcement
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <hr />
-
-                <div className="comments-section">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="comment mb-4">
-                      <div className="d-flex">
-                        <div
-                          className="avatar-circle d-flex align-items-center justify-content-center me-3"
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            borderRadius: "50%",
-                            backgroundColor: getAvatarColor(comment.author),
-                            color: "white",
-                            fontSize: "1rem",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {getInitials(comment.author)}
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              <h6 className="mb-0">{comment.author}</h6>
-                              <small className="text-muted">
-                                {comment.authorRole} •{" "}
-                                {getTimeAgo(comment.timestamp)}
-                              </small>
-                            </div>
-                            <div className="dropdown">
-                              <button
-                                className="btn btn-sm btn-link text-muted"
-                                type="button"
-                                id={`comment-options-${comment.id}`}
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                              >
-                                <i className="bi bi-three-dots-vertical"></i>
-                              </button>
-                              <ul
-                                className="dropdown-menu"
-                                aria-labelledby={`comment-options-${comment.id}`}
-                              >
-                                {/* <li>
-                                  <button className="dropdown-item">
-                                    Edit
-                                  </button>
-                                </li> */}
-                                <li>
-                                  <button
-                                    className="dropdown-item"
-                                    onClick={() => handleDelete(comment.id)}
-                                  >
-                                    Delete
-                                  </button>
-                                </li>
-                                <li>
-                                  {/* <button
-                                    className="dropdown-item"
-                                    onClick={() => handleReport(comment.id)}
-                                  >
-                                    Report
-                                  </button> */}
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
-                          <div className="comment-content mt-2">
-                            <p>{comment.content}</p>
-                          </div>
-                          <div className="comment-actions">
-                            {/* <button
-                              className="btn btn-sm btn-link text-muted me-2"
-                              onClick={() => handleLike(comment.id)}
-                            >
-                              <i className="bi bi-hand-thumbs-up"></i> Like
-                            </button>
-                            <button className="btn btn-sm btn-link text-muted">
-                              <i className="bi bi-reply"></i> Reply
-                            </button> */}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {comments.length === 0 && (
-                    <div className="text-center text-muted py-5">
-                      <i className="bi bi-chat-square-text fs-1"></i>
-                      <p className="mt-3">No comments yet</p>
-                      <p>Be the first to comment on this project</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
+
+          <div className="col-12">
+            {announcements.map((announcement) => (
+              <div
+                key={announcement.id}
+                className="card shadow-sm border-0 mb-4"
+              >
+                <div className="card-body">
+                  <h5 className="card-title">{announcement.title}</h5>
+                  <div className="d-flex align-items-center mb-3">
+                    <div
+                      className="avatar-circle d-flex align-items-center justify-content-center me-2"
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "50%",
+                        backgroundColor: getAvatarColor(announcement.author),
+                        color: "white",
+                        fontSize: "0.8rem",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {getInitials(announcement.author)}
+                    </div>
+                    <span className="me-2">{announcement.author}</span>
+                    <small className="text-muted">
+                      {formatDate(announcement.timestamp)}
+                    </small>
+                  </div>
+                  <p className="card-text">{announcement.content}</p>
+                  <div className="d-flex justify-content-end">
+                    <button className="btn btn-sm btn-outline-primary me-2">
+                      <i className="bi bi-hand-thumbs-up"></i> Acknowledge
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary">
+                      <i className="bi bi-chat-dots"></i> Comment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {announcements.length === 0 && (
+              <div className="text-center text-muted py-5">
+                <i className="bi bi-megaphone fs-1"></i>
+                <p className="mt-3">No announcements yet</p>
+                <p>Create an announcement to inform your team</p>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

@@ -10,7 +10,7 @@ const AdminSidebar = ({ collapsed, toggleSidebar }) => {
     { path: "/admin-users", icon: <FaUsers />, label: "User Management" },
     { path: "/admin-projects", icon: <FaProjectDiagram />, label: "Project Management" },
     { path: "/admin-tasks", icon: <FaTasks />, label: "Task Management" },
-    { path: "/admin-settings", icon: <FaCog />, label: "System Settings" },
+    // { path: "/admin-settings", icon: <FaCog />, label: "System Settings" },
     { path: "/logout", icon: <FaSignOutAlt />, label: "Logout", divider: true },
   ]
 
